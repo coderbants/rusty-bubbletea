@@ -1,46 +1,41 @@
-//! Cleanroom Rust port of upstream Go example: `examples/window-size/main.go`
-//! Upstream Target Tag / Version: `v1.3.4`
+use charming_bubbletea::{
+    print_f, quit, request_window_size, Cmd, KeyPressMsg, Model, Msg, Program, View, WindowSizeMsg,
+};
 
-use charming_bubbletea::*;
-
-struct WindowSizeModel {
-    size_info: String,
+#[derive(Default)]
+struct ModelImpl {
+    width: usize,
+    height: usize,
 }
 
-impl Model for WindowSizeModel {
+impl Model for ModelImpl {
     fn init(&self) -> Cmd {
         None
     }
 
     fn update(&mut self, msg: Box<dyn Msg>) -> Cmd {
-        if let Some(key) = msg.as_ref().as_any().downcast_ref::<KeyMsg>() {
-            match key.to_string_rep().as_str() {
-                "ctrl+c" | "q" | "esc" => return quit(),
-                _ => return window_size(),
+        if let Some(ws) = msg.as_any().downcast_ref::<WindowSizeMsg>() {
+            self.width = ws.width;
+            self.height = ws.height;
+            print_f(format_args!("{}x{}", self.width, self.height))
+        } else if let Some(k) = msg.as_any().downcast_ref::<KeyPressMsg>() {
+            if k.0.to_string() == "q" || k.0.to_string() == "ctrl+c" {
+                quit()
+            } else {
+                request_window_size()
             }
+        } else {
+            None
         }
-
-        if let Some(ws) = msg.as_ref().as_any().downcast_ref::<WindowSizeMsg>() {
-            self.size_info = format!("{}x{}", ws.width, ws.height);
-        }
-
-        None
     }
 
-    fn view(&self) -> String {
-        format!(
-            "When you're done press q to quit. Window size: {}\n",
-            self.size_info
-        )
+    fn view(&self) -> View {
+        View::new("When you're done press q to quit. Press any other key to query the window-size.\n")
     }
 }
 
-fn main() {
-    let p = Program::new(WindowSizeModel {
-        size_info: "Unknown".to_string(),
-    });
-    if let Err(err) = p.run() {
-        eprintln!("Error running program: {}", err);
-        std::process::exit(1);
-    }
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let program = Program::new(ModelImpl::default());
+    program.run()?;
+    Ok(())
 }

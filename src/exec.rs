@@ -1,40 +1,34 @@
 //! Cleanroom Rust port of upstream Go source file: `exec.go`
-//! Upstream Target Tag / Version: `v1.3.4`
+//! Upstream Target Tag / Version: `v2.0.8`
 //!
 //! <public-docs>
-//! # Exec
+//! # Process Execution
 //!
-//! ExecProcess and ExecCommand for executing external process commands with terminal release/restore.
+//! External process execution commands (`exec_process`) for spawning sub-shells and editors in Bubble Tea v2.0.8.
 //! </public-docs>
 
 use crate::model::{Cmd, Msg};
-use std::process::Command;
 
-/// <upstream-comment>
-/// ExecMsg is sent to run an external process command.
-/// </upstream-comment>
+/// Callback function type for ExecProcess.
+pub type ExecCallback = fn(Result<(), std::io::Error>) -> Option<Box<dyn Msg>>;
+
+/// ExecMsg is sent internally to trigger command execution.
+#[derive(Debug)]
 pub struct ExecMsg {
-    /// Command runner closure.
-    pub cmd_fn: Box<dyn FnOnce() -> Option<Box<dyn Msg>> + Send + Sync>,
+    /// Command name.
+    pub cmd: String,
+    /// Command arguments.
+    pub args: Vec<String>,
 }
 
-/// <upstream-comment>
-/// ExecProcess runs an external command in a blocking fashion, pausing the program event loop.
-/// </upstream-comment>
-pub fn exec_process<F>(mut command: Command, callback: F) -> Cmd
-where
-    F: FnOnce(Result<(), std::io::Error>) -> Option<Box<dyn Msg>> + Send + Sync + 'static,
-{
+/// ExecProcess spawns an external process (e.g. vim, htop) while pausing raw mode.
+pub fn exec_process(cmd: &str, args: &[&str]) -> Cmd {
+    let name = cmd.to_string();
+    let argv = args.iter().map(|s| s.to_string()).collect();
     Some(Box::new(move || {
-        let status = command.status();
-        let result = match status {
-            Ok(s) if s.success() => Ok(()),
-            Ok(s) => Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                format!("Process exited with status {}", s),
-            )),
-            Err(e) => Err(e),
-        };
-        callback(result)
+        Some(Box::new(ExecMsg {
+            cmd: name,
+            args: argv,
+        }))
     }))
 }

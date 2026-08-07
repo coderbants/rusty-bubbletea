@@ -1,5 +1,5 @@
 //! Cleanroom Rust port of upstream Go source file: `tty_unix.go`
-//! Upstream Target Tag / Version: `v1.3.4`
+//! Upstream Target Tag / Version: `v2.0.8`
 //!
 //! <public-docs>
 //! # TTY (Unix)

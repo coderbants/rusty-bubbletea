@@ -1,18 +1,12 @@
-use charming_bubbletea::*;
+use charming_bubbletea::{Key, KeyMod, KeyPressMsg};
 
 #[test]
-fn test_key_msg() {
-    let key = KeyMsg::new(KeyType::KeyEnter);
-    assert_eq!(key.to_string_rep(), "enter");
-    assert_eq!(format!("{}", key), "enter");
+fn test_v2_key_press_msg() {
+    let k = Key::new('a', "a", KeyMod::default());
+    let msg = KeyPressMsg(k);
+    assert_eq!(msg.to_string(), "a");
 
-    let runes = vec!['a'];
-    let key_a = KeyMsg::from_runes(&runes, false);
-    assert_eq!(key_a.to_string_rep(), "a");
-
-    let key_alt_a = KeyMsg::from_runes(&runes, true);
-    assert_eq!(key_alt_a.to_string_rep(), "alt+a");
-
-    let ctrl_c = KeyMsg::new(KeyType::KeyCtrlC);
-    assert_eq!(ctrl_c.to_string_rep(), "ctrl+c");
+    let space_key = Key::new(' ', " ", KeyMod::default());
+    let space_msg = KeyPressMsg(space_key);
+    assert_eq!(space_msg.to_string(), "space");
 }

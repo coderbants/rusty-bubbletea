@@ -1,31 +1,28 @@
-//! Cleanroom Rust port of upstream Go source file: `tty.go`, `tty_unix.go`, `tty_windows.go`
-//! Upstream Target Tag / Version: `v1.3.4`
+//! Cleanroom Rust port of upstream Go source file: `tty.go`
+//! Upstream Target Tag / Version: `v2.0.8`
 //!
 //! <public-docs>
-//! # TTY
+//! # TTY Terminal Management
 //!
-//! Terminal initialization and state restoration helpers.
+//! TTY initialization, input stream setup, raw mode toggles, and window dimension queries for Bubble Tea v2.0.8.
 //! </public-docs>
 
-use crossterm::{
-    cursor::Show,
-    execute,
-    terminal::{disable_raw_mode, enable_raw_mode, LeaveAlternateScreen},
-};
-use std::io::{stdout, Result};
+use crossterm::terminal::{disable_raw_mode, enable_raw_mode, size as term_size};
 
-/// <upstream-comment>
-/// Enable raw mode and prepare TTY.
-/// </upstream-comment>
-pub fn init_terminal() -> Result<()> {
-    enable_raw_mode()
+/// Initializes terminal raw mode.
+pub fn init_terminal() -> Result<(), Box<dyn std::error::Error>> {
+    enable_raw_mode()?;
+    Ok(())
 }
 
-/// <upstream-comment>
-/// Restore original TTY terminal state.
-/// </upstream-comment>
-pub fn restore_terminal() -> Result<()> {
-    let _ = execute!(stdout(), crossterm::event::DisableMouseCapture);
-    let _ = execute!(stdout(), Show, LeaveAlternateScreen);
-    disable_raw_mode()
+/// Restores terminal raw mode.
+pub fn restore_terminal() -> Result<(), Box<dyn std::error::Error>> {
+    disable_raw_mode()?;
+    Ok(())
+}
+
+/// Queries current window size columns and rows.
+pub fn get_window_size() -> Result<(u16, u16), Box<dyn std::error::Error>> {
+    let (w, h) = term_size()?;
+    Ok((w, h))
 }

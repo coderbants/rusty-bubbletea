@@ -1,54 +1,80 @@
 //! Cleanroom Rust port of upstream Go source file: `tea.go`
-//! Upstream Target Tag / Version: `v1.3.4`
+//! Upstream Target Tag / Version: `v2.0.8`
 //!
-//! <public-docs>
-//! # Charming Bubble Tea
+//! <upstream-docs>
+//! Package tea provides a framework for building rich terminal user interfaces
+//! based on the paradigms of The Elm Architecture. It's well-suited for simple
+//! and complex terminal applications, either inline, full-window, or a mix of
+//! both. It's been battle-tested in several large projects and is
+//! production-ready.
 //!
-//! Cleanroom Rust port of Charmbracelet's Bubble Tea TUI Elm-architecture framework.
-//! </public-docs>
+//! A tutorial is available at https://github.com/charmbracelet/bubbletea/tree/master/tutorials
+//!
+//! Example programs can be found at https://github.com/charmbracelet/bubbletea/tree/master/examples
+//! </upstream-docs>
 
 #![deny(missing_docs)]
 
 pub mod clipboard;
+pub mod color;
 pub mod commands;
+pub mod cursed_renderer;
+pub mod cursor;
+pub mod environ;
 pub mod exec;
 pub mod focus;
-pub mod inputreader_other;
-pub mod inputreader_windows;
+pub mod input;
 pub mod key;
-pub mod key_other;
-pub mod key_sequences;
-pub mod key_windows;
+pub mod keyboard;
 pub mod logging;
+pub mod mod_keys;
 pub mod model;
 pub mod mouse;
 pub mod nil_renderer;
 pub mod options;
+pub mod paste;
+pub mod profile;
 pub mod program;
+pub mod raw;
 pub mod renderer;
 pub mod screen;
 pub mod signals_unix;
 pub mod signals_windows;
-pub mod standard_renderer;
-pub mod tea_init;
+pub mod termcap;
+pub mod termios_bsd;
+pub mod termios_other;
+pub mod termios_unix;
+pub mod termios_windows;
 pub mod tty;
 pub mod tty_unix;
 pub mod tty_windows;
+pub mod view;
+pub mod xterm;
 
 pub use clipboard::*;
+pub use color::*;
 pub use commands::*;
+pub use cursed_renderer::*;
+pub use cursor::*;
+pub use environ::*;
 pub use exec::*;
 pub use focus::*;
+pub use input::*;
 pub use key::*;
-pub use key_sequences::*;
+pub use keyboard::*;
 pub use logging::*;
+pub use mod_keys::*;
 pub use model::*;
 pub use mouse::*;
 pub use nil_renderer::*;
 pub use options::*;
+pub use paste::*;
+pub use profile::*;
 pub use program::*;
+pub use raw::*;
 pub use renderer::*;
 pub use screen::*;
-pub use standard_renderer::*;
-pub use tea_init::*;
+pub use termcap::*;
 pub use tty::*;
+pub use view::*;
+pub use xterm::*;

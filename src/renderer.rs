@@ -1,96 +1,65 @@
 //! Cleanroom Rust port of upstream Go source file: `renderer.go`
-//! Upstream Target Tag / Version: `v1.3.4`
+//! Upstream Target Tag / Version: `v2.0.8`
 //!
 //! <public-docs>
-//! # Renderer
+//! # Renderer Trait
 //!
-//! Renderer interface trait for Bubble Tea terminal output renderers.
+//! Renderer interface trait for Bubble Tea v2.0.8 (`render(View)`, `flush(bool)`, `insert_above`, `clear_screen`).
 //! </public-docs>
 
-use crate::model::Msg;
+use crate::model::Cmd;
+use crate::mouse::MouseMsg;
+use crate::view::View;
+use std::fmt;
 
-/// <upstream-comment>
-/// Renderer is the interface for Bubble Tea renderers.
-/// </upstream-comment>
+/// Renderer interface for Bubble Tea v2.0.8.
 pub trait Renderer: Send + Sync {
-    /// Start the renderer.
+    /// Starts the renderer.
     fn start(&mut self);
 
-    /// Stop the renderer, but render the final frame in the buffer, if any.
-    fn stop(&mut self);
+    /// Closes the renderer and flushes any remaining data.
+    fn close(&mut self) -> Result<(), Box<dyn std::error::Error>>;
 
-    /// Stop the renderer without doing any final rendering.
-    fn kill(&mut self);
+    /// Renders a declarative View frame.
+    fn render(&mut self, view: View);
 
-    /// Write a frame to the renderer.
-    fn write(&mut self, s: String);
+    /// Flushes renderer output buffer to terminal stdout.
+    fn flush(&mut self, closing: bool) -> Result<(), Box<dyn std::error::Error>>;
 
-    /// Handle renderer-internal messages (e.g. PrintlnMsg, WindowSizeMsg).
-    fn handle_message(&mut self, msg: &dyn Msg);
+    /// Resets renderer to initial state.
+    fn reset(&mut self);
 
-    /// Request a full re-render.
-    fn repaint(&mut self);
+    /// Inserts unmanaged lines above the TUI renderer.
+    fn insert_above(&mut self, s: String) -> Result<(), Box<dyn std::error::Error>>;
 
-    /// Clears the terminal.
+    /// Resize notification.
+    fn resize(&mut self, width: usize, height: usize);
+
+    /// Clears terminal screen.
     fn clear_screen(&mut self);
 
-    /// Whether or not the alternate screen buffer is enabled.
-    fn alt_screen(&self) -> bool;
+    /// Write raw string to output.
+    fn write_string(&mut self, s: &str) -> Result<usize, Box<dyn std::error::Error>>;
 
-    /// Enable the alternate screen buffer.
-    fn enter_alt_screen(&mut self);
-
-    /// Disable the alternate screen buffer.
-    fn exit_alt_screen(&mut self);
-
-    /// Show the cursor.
-    fn show_cursor(&mut self);
-
-    /// Hide the cursor.
-    fn hide_cursor(&mut self);
-
-    /// Enable mouse cell motion.
-    fn enable_mouse_cell_motion(&mut self);
-
-    /// Disable mouse cell motion.
-    fn disable_mouse_cell_motion(&mut self);
-
-    /// Enable mouse all motion.
-    fn enable_mouse_all_motion(&mut self);
-
-    /// Disable mouse all motion.
-    fn disable_mouse_all_motion(&mut self);
-
-    /// Enable mouse SGR mode.
-    fn enable_mouse_sgr_mode(&mut self);
-
-    /// Disable mouse SGR mode.
-    fn disable_mouse_sgr_mode(&mut self);
-
-    /// Enable bracketed paste.
-    fn enable_bracketed_paste(&mut self);
-
-    /// Disable bracketed paste.
-    fn disable_bracketed_paste(&mut self);
-
-    /// Reports whether bracketed paste mode is active.
-    fn bracketed_paste_active(&self) -> bool;
-
-    /// Set window title.
-    fn set_window_title(&mut self, title: &str);
-
-    /// Reports whether focus reporting is enabled.
-    fn report_focus(&self) -> bool;
-
-    /// Enable report focus.
-    fn enable_report_focus(&mut self);
-
-    /// Disable report focus.
-    fn disable_report_focus(&mut self);
+    /// Mouse event interceptor.
+    fn on_mouse(&mut self, msg: MouseMsg) -> Cmd;
 }
 
-/// <upstream-comment>
-/// RepaintMsg forces a full repaint.
-/// </upstream-comment>
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct RepaintMsg;
+/// PrintLineMsg represents a line printed above the TUI.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PrintLineMsg {
+    /// Message body.
+    pub message_body: String,
+}
+
+/// Println prints above the Program.
+pub fn print_ln(args: fmt::Arguments<'_>) -> Cmd {
+    let body = args.to_string();
+    Some(Box::new(move || Some(Box::new(PrintLineMsg { message_body: body }))))
+}
+
+/// Printf prints formatted output above the Program.
+pub fn print_f(args: fmt::Arguments<'_>) -> Cmd {
+    let body = args.to_string();
+    Some(Box::new(move || Some(Box::new(PrintLineMsg { message_body: body }))))
+}

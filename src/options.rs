@@ -1,57 +1,39 @@
 //! Cleanroom Rust port of upstream Go source file: `options.go`
-//! Upstream Target Tag / Version: `v1.3.4`
+//! Upstream Target Tag / Version: `v2.0.8`
 //!
 //! <public-docs>
-//! # Options
+//! # Program Options
 //!
-//! Options for configuring Program behavior on initialization.
+//! Program options (`with_fps`, `without_renderer`, `with_filter`, `with_window_size`, `without_signals`).
 //! </public-docs>
 
-use crate::nil_renderer::NilRenderer;
-use crate::program::Program;
-use crate::standard_renderer::StandardRenderer;
 use crate::model::{Model, Msg};
 
-/// <upstream-comment>
-/// ProgramOption is used to set options when initializing a Program.
-/// </upstream-comment>
-pub type ProgramOption<M> = Box<dyn FnOnce(&mut Program<M>)>;
-
-/// <upstream-comment>
-/// WithAltScreen starts the program with alternate screen buffer enabled.
-/// </upstream-comment>
-pub fn with_alt_screen<M: Model>() -> ProgramOption<M> {
-    Box::new(|p: &mut Program<M>| {
-        p.renderer.enter_alt_screen();
-    })
+/// Program configuration options.
+pub struct ProgramOptions<M: Model> {
+    /// Target FPS framerate limit.
+    pub fps: u32,
+    /// Disable renderer (for daemon or headless usage).
+    pub disable_renderer: bool,
+    /// Disable OS signal handling.
+    pub disable_signals: bool,
+    /// Initial terminal width override.
+    pub width: usize,
+    /// Initial terminal height override.
+    pub height: usize,
+    /// Optional event filter.
+    pub filter: Option<Box<dyn Fn(&M, Box<dyn Msg>) -> Option<Box<dyn Msg>> + Send + Sync>>,
 }
 
-/// <upstream-comment>
-/// WithoutRenderer disables the renderer.
-/// </upstream-comment>
-pub fn without_renderer<M: Model>() -> ProgramOption<M> {
-    Box::new(|p: &mut Program<M>| {
-        p.renderer = Box::new(NilRenderer);
-    })
-}
-
-/// <upstream-comment>
-/// WithFPS sets custom maximum FPS for renderer.
-/// </upstream-comment>
-pub fn with_fps<M: Model>(fps: u32) -> ProgramOption<M> {
-    Box::new(move |p: &mut Program<M>| {
-        p.renderer = Box::new(StandardRenderer::new(fps));
-    })
-}
-
-/// <upstream-comment>
-/// WithFilter supplies an event filter that can modify or intercept messages before processing.
-/// </upstream-comment>
-pub fn with_filter<M: Model, F>(filter: F) -> ProgramOption<M>
-where
-    F: Fn(&M, Box<dyn Msg>) -> Option<Box<dyn Msg>> + Send + Sync + 'static,
-{
-    Box::new(move |p: &mut Program<M>| {
-        p.filter = Some(Box::new(filter));
-    })
+impl<M: Model> Default for ProgramOptions<M> {
+    fn default() -> Self {
+        Self {
+            fps: 60,
+            disable_renderer: false,
+            disable_signals: false,
+            width: 0,
+            height: 0,
+            filter: None,
+        }
+    }
 }

@@ -1,110 +1,134 @@
 //! Cleanroom Rust port of upstream Go source file: `mouse.go`
-//! Upstream Target Tag / Version: `v1.3.4`
+//! Upstream Target Tag / Version: `v2.0.8`
 //!
 //! <public-docs>
-//! # Mouse
+//! # Mouse Messages & Events
 //!
-//! Mouse represents mouse button clicks, motion events, and coordinates.
+//! Mouse button definitions, `Mouse` struct, and typed mouse messages (`MouseClickMsg`, `MouseReleaseMsg`, `MouseWheelMsg`, `MouseMotionMsg`).
 //! </public-docs>
 
+use crate::key::KeyMod;
 use std::fmt;
 
-/// <upstream-comment>
-/// MouseButton indicates which mouse button was triggered.
-/// </upstream-comment>
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+/// MouseButton enum matching X11 button codes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MouseButton {
-    /// <upstream-comment>
-    /// MouseLeft button.
-    /// </upstream-comment>
-    MouseLeft,
-    /// <upstream-comment>
-    /// MouseRight button.
-    /// </upstream-comment>
-    MouseRight,
-    /// <upstream-comment>
-    /// MouseMiddle button.
-    /// </upstream-comment>
-    MouseMiddle,
-    /// <upstream-comment>
-    /// MouseWheelUp button.
-    /// </upstream-comment>
-    MouseWheelUp,
-    /// <upstream-comment>
-    /// MouseWheelDown button.
-    /// </upstream-comment>
-    MouseWheelDown,
-    /// <upstream-comment>
-    /// MouseRelease button event.
-    /// </upstream-comment>
-    MouseRelease,
-    /// <upstream-comment>
-    /// MouseUnknown event button.
-    /// </upstream-comment>
-    MouseUnknown,
+    /// No button.
+    MouseNone = 0,
+    /// Left mouse button.
+    MouseLeft = 1,
+    /// Middle mouse button (scroll wheel press).
+    MouseMiddle = 2,
+    /// Right mouse button.
+    MouseRight = 3,
+    /// Scroll wheel up.
+    MouseWheelUp = 4,
+    /// Scroll wheel down.
+    MouseWheelDown = 5,
+    /// Scroll wheel left.
+    MouseWheelLeft = 6,
+    /// Scroll wheel right.
+    MouseWheelRight = 7,
+    /// Browser backward button.
+    MouseBackward = 8,
+    /// Browser forward button.
+    MouseForward = 9,
+    /// Button 10.
+    MouseButton10 = 10,
+    /// Button 11.
+    MouseButton11 = 11,
 }
 
-/// <upstream-comment>
-/// MouseAction indicates the type of mouse event (press, release, motion).
-/// </upstream-comment>
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum MouseAction {
-    /// <upstream-comment>
-    /// MouseActionPress represents a button press.
-    /// </upstream-comment>
-    MouseActionPress,
-    /// <upstream-comment>
-    /// MouseActionRelease represents a button release.
-    /// </upstream-comment>
-    MouseActionRelease,
-    /// <upstream-comment>
-    /// MouseActionMotion represents mouse movement.
-    /// </upstream-comment>
-    MouseActionMotion,
-}
-
-/// <upstream-comment>
-/// MouseMsg represents a mouse event with coordinates and buttons.
-/// </upstream-comment>
+/// Mouse event data struct.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct MouseMsg {
-    /// Column X coordinate (0-indexed).
-    pub x: u16,
-    /// Row Y coordinate (0-indexed).
-    pub y: u16,
-    /// Button associated with the event.
+pub struct Mouse {
+    /// Zero-based X coordinate (column).
+    pub x: usize,
+    /// Zero-based Y coordinate (row).
+    pub y: usize,
+    /// Button pressed/released.
     pub button: MouseButton,
-    /// Action associated with the event.
-    pub action: MouseAction,
-    /// Alt modifier key status.
-    pub alt: bool,
-    /// Ctrl modifier key status.
-    pub ctrl: bool,
-    /// Shift modifier key status.
-    pub shift: bool,
+    /// Key modifiers active.
+    pub mod_keys: KeyMod,
+}
+
+impl fmt::Display for Mouse {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "({};{}) {:?}", self.x, self.y, self.button)
+    }
+}
+
+/// MouseClickMsg represents a mouse button click message.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MouseClickMsg(pub Mouse);
+
+impl fmt::Display for MouseClickMsg {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+/// MouseReleaseMsg represents a mouse button release message.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MouseReleaseMsg(pub Mouse);
+
+impl fmt::Display for MouseReleaseMsg {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+/// MouseWheelMsg represents a mouse wheel message.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MouseWheelMsg(pub Mouse);
+
+impl fmt::Display for MouseWheelMsg {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+/// MouseMotionMsg represents a mouse motion message.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MouseMotionMsg(pub Mouse);
+
+impl fmt::Display for MouseMotionMsg {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.0.button != MouseButton::MouseNone {
+            write!(f, "{}+motion", self.0)
+        } else {
+            write!(f, "{} motion", self.0)
+        }
+    }
+}
+
+/// MouseMsg enum abstraction covering click, release, wheel, and motion messages.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum MouseMsg {
+    /// Mouse click event.
+    Click(MouseClickMsg),
+    /// Mouse release event.
+    Release(MouseReleaseMsg),
+    /// Mouse wheel event.
+    Wheel(MouseWheelMsg),
+    /// Mouse motion event.
+    Motion(MouseMotionMsg),
 }
 
 impl MouseMsg {
-    /// Creates a new MouseMsg.
-    pub fn new(x: u16, y: u16, button: MouseButton, action: MouseAction) -> Self {
-        Self {
-            x,
-            y,
-            button,
-            action,
-            alt: false,
-            ctrl: false,
-            shift: false,
+    /// Returns reference to underlying Mouse struct.
+    pub fn mouse(&self) -> &Mouse {
+        match self {
+            MouseMsg::Click(m) => &m.0,
+            MouseMsg::Release(m) => &m.0,
+            MouseMsg::Wheel(m) => &m.0,
+            MouseMsg::Motion(m) => &m.0,
         }
     }
 }
 
 impl fmt::Display for MouseMsg {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "({}, {}: {:?} {:?})",
-            self.x, self.y, self.button, self.action
-        )
+        write!(f, "{}", self.mouse())
     }
 }

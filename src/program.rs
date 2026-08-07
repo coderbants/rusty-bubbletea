@@ -1,22 +1,27 @@
-//! Cleanroom Rust port of upstream Go source file: `program.go`
-//! Upstream Target Tag / Version: `v1.3.4`
+//! Cleanroom Rust port of upstream Go source file: `tea.go` (Program runner)
+//! Upstream Target Tag / Version: `v2.0.8`
 //!
-//! <public-docs>
-//! # Program
+//! <upstream-docs>
+//! Package tea provides a framework for building rich terminal user interfaces
+//! based on the paradigms of The Elm Architecture. It's well-suited for simple
+//! and complex terminal applications, either inline, full-window, or a mix of
+//! both. It's been battle-tested in several large projects and is
+//! production-ready.
 //!
-//! Program runner managing the Elm architecture event loop, terminal raw mode, Crossterm event polling, rendering, and async command dispatches.
-//! </public-docs>
+//! A tutorial is available at https://github.com/charmbracelet/bubbletea/tree/master/tutorials
+//!
+//! Example programs can be found at https://github.com/charmbracelet/bubbletea/tree/master/examples
+//! </upstream-docs>
 
-use crate::commands::{
-    BatchMsg, EnterAltScreenMsg, ExitAltScreenMsg, QuitMsg, RequestWindowSizeMsg, SequenceMsg,
-    SetWindowTitleMsg, WindowSizeMsg,
-};
-use crate::key::{KeyMsg, KeyType};
+use crate::commands::{BatchMsg, QuitMsg, RequestWindowSizeMsg, SequenceMsg};
+use crate::cursed_renderer::CursedRenderer;
+use crate::exec::ExecMsg;
+use crate::key::{Key, KeyMod, KeyPressMsg, KEY_BACKSPACE, KEY_DOWN, KEY_END, KEY_ENTER, KEY_ESCAPE, KEY_HOME, KEY_LEFT, KEY_PG_DOWN, KEY_PG_UP, KEY_RIGHT, KEY_TAB, KEY_UP};
 use crate::model::{Model, Msg};
-use crate::mouse::{MouseAction, MouseButton, MouseMsg};
+use crate::mouse::{Mouse, MouseButton, MouseClickMsg, MouseReleaseMsg, MouseWheelMsg};
+use crate::options::ProgramOptions;
 use crate::renderer::Renderer;
-use crate::standard_renderer::StandardRenderer;
-
+use crate::screen::{ClearScreenMsg, WindowSizeMsg};
 use crossterm::{
     event::{self, Event as CrossEvent, KeyCode, KeyModifiers, MouseEventKind},
     terminal::{disable_raw_mode, enable_raw_mode, size as term_size},
@@ -25,53 +30,33 @@ use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread;
 use std::time::Duration;
 
-/// Event filter function closure type.
-pub type FilterFn<M> = Box<dyn Fn(&M, Box<dyn Msg>) -> Option<Box<dyn Msg>> + Send + Sync>;
-
-/// <upstream-comment>
-/// Program is the runner for a Bubble Tea application.
-/// </upstream-comment>
+/// Program is the runner for a Bubble Tea v2.0.8 application.
 pub struct Program<M: Model> {
     model: M,
-    /// Renderer instance.
-    pub renderer: Box<dyn Renderer>,
-    /// Optional event filter.
-    pub filter: Option<FilterFn<M>>,
-    enable_mouse: bool,
+    options: ProgramOptions<M>,
+    renderer: Box<dyn Renderer>,
 }
 
 impl<M: Model> Program<M> {
-    /// <upstream-comment>
-    /// NewProgram creates a new Program instance for the given Model.
-    /// </upstream-comment>
+    /// Creates a new Program for the given model with default options.
     pub fn new(model: M) -> Self {
+        let (w, h) = term_size().unwrap_or((80, 24));
         Self {
             model,
-            renderer: Box::new(StandardRenderer::new(60)),
-            filter: None,
-            enable_mouse: false,
+            options: ProgramOptions::default(),
+            renderer: Box::new(CursedRenderer::new(w as usize, h as usize)),
         }
     }
 
-    /// Custom constructor accepting a custom renderer implementation.
-    pub fn with_renderer(model: M, renderer: Box<dyn Renderer>) -> Self {
-        Self {
-            model,
-            renderer,
-            filter: None,
-            enable_mouse: false,
-        }
-    }
-
-    /// Enable mouse tracking for mouse-aware applications.
-    pub fn with_mouse(mut self) -> Self {
-        self.enable_mouse = true;
+    /// Sets custom program options.
+    pub fn with_options(mut self, options: ProgramOptions<M>) -> Self {
+        self.options = options;
         self
     }
 
     /// Helper to process a message, execute terminal commands, and dispatch generated commands.
     fn handle_msg(&mut self, msg: Box<dyn Msg>, tx: &Sender<Box<dyn Msg>>) -> bool {
-        let processed_msg = if let Some(ref filter) = self.filter {
+        let processed_msg = if let Some(ref filter) = self.options.filter {
             match filter(&self.model, msg) {
                 Some(m) => m,
                 None => return false,
@@ -84,30 +69,36 @@ impl<M: Model> Program<M> {
             return true;
         }
 
-        self.renderer.handle_message(processed_msg.as_ref());
-
-        if processed_msg.as_ref().as_any().is::<EnterAltScreenMsg>() {
-            self.renderer.enter_alt_screen();
-        } else if processed_msg.as_ref().as_any().is::<ExitAltScreenMsg>() {
-            self.renderer.exit_alt_screen();
-        } else if let Some(title_msg) = processed_msg.as_ref().as_any().downcast_ref::<SetWindowTitleMsg>() {
-            self.renderer.set_window_title(&title_msg.0);
+        if processed_msg.as_ref().as_any().is::<ClearScreenMsg>() {
+            self.renderer.clear_screen();
         } else if processed_msg.as_ref().as_any().is::<RequestWindowSizeMsg>() {
             if let Ok((w, h)) = term_size() {
-                let _ = tx.send(Box::new(WindowSizeMsg::new(w, h)));
+                let _ = tx.send(Box::new(WindowSizeMsg {
+                    width: w as usize,
+                    height: h as usize,
+                }));
             }
+        } else if let Some(ws) = processed_msg.as_ref().as_any().downcast_ref::<WindowSizeMsg>() {
+            self.renderer.resize(ws.width, ws.height);
+        } else if let Some(exec_msg) = processed_msg.as_ref().as_any().downcast_ref::<ExecMsg>() {
+            let _ = disable_raw_mode();
+            let mut cmd = std::process::Command::new(&exec_msg.cmd);
+            cmd.args(&exec_msg.args);
+            let _ = cmd.status();
+            let _ = enable_raw_mode();
         }
 
-        if let Some(_batch_msg) = processed_msg.as_ref().as_any().downcast_ref::<BatchMsg>() {
+        if let Some(_batch) = processed_msg.as_ref().as_any().downcast_ref::<BatchMsg>() {
             return false;
         }
 
-        if let Some(_seq_msg) = processed_msg.as_ref().as_any().downcast_ref::<SequenceMsg>() {
+        if let Some(_seq) = processed_msg.as_ref().as_any().downcast_ref::<SequenceMsg>() {
             return false;
         }
 
         let cmd = self.model.update(processed_msg);
-        self.renderer.write(self.model.view());
+        let view = self.model.view();
+        self.renderer.render(view);
 
         if let Some(c) = cmd {
             let tx_clone = tx.clone();
@@ -120,66 +111,62 @@ impl<M: Model> Program<M> {
         false
     }
 
-    /// <upstream-comment>
-    /// Run initializes raw mode, starts terminal event polling, executes commands, and runs the event loop until quit.
-    /// </upstream-comment>
+    /// Runs the Bubble Tea v2.0.8 event loop until quit.
     pub fn run(mut self) -> Result<M, Box<dyn std::error::Error>> {
         let _ = enable_raw_mode();
         self.renderer.start();
-        if self.enable_mouse {
-            self.renderer.enable_mouse_all_motion();
-        }
 
         let (tx, rx): (Sender<Box<dyn Msg>>, Receiver<Box<dyn Msg>>) = channel();
 
-        // Spawn terminal input reader thread
+        // Spawn Crossterm input listener thread
         let event_tx = tx.clone();
         thread::spawn(move || loop {
             if event::poll(Duration::from_millis(50)).unwrap_or(false) {
                 if let Ok(evt) = event::read() {
                     match evt {
                         CrossEvent::Key(k) => {
-                            let (key_type, runes) = match k.code {
-                                KeyCode::Char(c) => (KeyType::KeyRunes, vec![c]),
-                                KeyCode::Enter => (KeyType::KeyEnter, vec![]),
-                                KeyCode::Backspace => (KeyType::KeyBackspace, vec![]),
-                                KeyCode::Tab => (KeyType::KeyTab, vec![]),
-                                KeyCode::Esc => (KeyType::KeyEsc, vec![]),
-                                KeyCode::Up => (KeyType::KeyUp, vec![]),
-                                KeyCode::Down => (KeyType::KeyDown, vec![]),
-                                KeyCode::Right => (KeyType::KeyRight, vec![]),
-                                KeyCode::Left => (KeyType::KeyLeft, vec![]),
-                                KeyCode::Home => (KeyType::KeyHome, vec![]),
-                                KeyCode::End => (KeyType::KeyEnd, vec![]),
-                                KeyCode::PageUp => (KeyType::KeyPgUp, vec![]),
-                                KeyCode::PageDown => (KeyType::KeyPgDown, vec![]),
-                                KeyCode::Delete => (KeyType::KeyDelete, vec![]),
-                                KeyCode::BackTab => (KeyType::KeyShiftTab, vec![]),
-                                _ => (KeyType::KeyUnknown, vec![]),
+                            let mut mod_keys = KeyMod::default();
+                            if k.modifiers.contains(KeyModifiers::CONTROL) {
+                                mod_keys.0 |= KeyMod::CTRL.0;
+                            }
+                            if k.modifiers.contains(KeyModifiers::ALT) {
+                                mod_keys.0 |= KeyMod::ALT.0;
+                            }
+                            if k.modifiers.contains(KeyModifiers::SHIFT) {
+                                mod_keys.0 |= KeyMod::SHIFT.0;
+                            }
+
+                            let (code, text) = match k.code {
+                                KeyCode::Char(c) => (c, c.to_string()),
+                                KeyCode::Enter => (KEY_ENTER, String::new()),
+                                KeyCode::Backspace => (KEY_BACKSPACE, String::new()),
+                                KeyCode::Tab => (KEY_TAB, String::new()),
+                                KeyCode::Esc => (KEY_ESCAPE, String::new()),
+                                KeyCode::Up => (KEY_UP, String::new()),
+                                KeyCode::Down => (KEY_DOWN, String::new()),
+                                KeyCode::Right => (KEY_RIGHT, String::new()),
+                                KeyCode::Left => (KEY_LEFT, String::new()),
+                                KeyCode::Home => (KEY_HOME, String::new()),
+                                KeyCode::End => (KEY_END, String::new()),
+                                KeyCode::PageUp => (KEY_PG_UP, String::new()),
+                                KeyCode::PageDown => (KEY_PG_DOWN, String::new()),
+                                _ => ('\0', String::new()),
                             };
 
-                            let is_alt = k.modifiers.contains(KeyModifiers::ALT);
-                            let is_ctrl = k.modifiers.contains(KeyModifiers::CONTROL);
-
-                            let msg: Box<dyn Msg> = if is_ctrl && runes == vec!['c'] {
-                                Box::new(KeyMsg::new(KeyType::KeyCtrlC))
-                            } else if key_type == KeyType::KeyRunes {
-                                Box::new(KeyMsg::from_runes(&runes, is_alt))
-                            } else {
-                                Box::new(KeyMsg::new(key_type))
-                            };
-
+                            let key = Key::new(code, &text, mod_keys);
+                            let msg: Box<dyn Msg> = Box::new(KeyPressMsg(key));
                             let _ = event_tx.send(msg);
                         }
                         CrossEvent::Mouse(m) => {
-                            let (button, action) = match m.kind {
+                            let (button, is_release, is_wheel) = match m.kind {
                                 MouseEventKind::Down(b) => (
                                     match b {
                                         crossterm::event::MouseButton::Left => MouseButton::MouseLeft,
                                         crossterm::event::MouseButton::Right => MouseButton::MouseRight,
                                         crossterm::event::MouseButton::Middle => MouseButton::MouseMiddle,
                                     },
-                                    MouseAction::MouseActionPress,
+                                    false,
+                                    false,
                                 ),
                                 MouseEventKind::Up(b) => (
                                     match b {
@@ -187,36 +174,36 @@ impl<M: Model> Program<M> {
                                         crossterm::event::MouseButton::Right => MouseButton::MouseRight,
                                         crossterm::event::MouseButton::Middle => MouseButton::MouseMiddle,
                                     },
-                                    MouseAction::MouseActionRelease,
+                                    true,
+                                    false,
                                 ),
-                                MouseEventKind::Drag(b) => (
-                                    match b {
-                                        crossterm::event::MouseButton::Left => MouseButton::MouseLeft,
-                                        crossterm::event::MouseButton::Right => MouseButton::MouseRight,
-                                        crossterm::event::MouseButton::Middle => MouseButton::MouseMiddle,
-                                    },
-                                    MouseAction::MouseActionMotion,
-                                ),
-                                MouseEventKind::Moved => (
-                                    MouseButton::MouseUnknown,
-                                    MouseAction::MouseActionMotion,
-                                ),
-                                MouseEventKind::ScrollUp => (
-                                    MouseButton::MouseWheelUp,
-                                    MouseAction::MouseActionPress,
-                                ),
-                                MouseEventKind::ScrollDown => (
-                                    MouseButton::MouseWheelDown,
-                                    MouseAction::MouseActionPress,
-                                ),
-                                _ => (MouseButton::MouseUnknown, MouseAction::MouseActionMotion),
+                                MouseEventKind::ScrollUp => (MouseButton::MouseWheelUp, false, true),
+                                MouseEventKind::ScrollDown => (MouseButton::MouseWheelDown, false, true),
+                                _ => (MouseButton::MouseNone, false, false),
                             };
 
-                            let mouse_msg = MouseMsg::new(m.column, m.row, button, action);
-                            let _ = event_tx.send(Box::new(mouse_msg));
+                            let mouse_data = Mouse {
+                                x: m.column as usize,
+                                y: m.row as usize,
+                                button,
+                                mod_keys: KeyMod::default(),
+                            };
+
+                            let msg: Box<dyn Msg> = if is_wheel {
+                                Box::new(MouseWheelMsg(mouse_data))
+                            } else if is_release {
+                                Box::new(MouseReleaseMsg(mouse_data))
+                            } else {
+                                Box::new(MouseClickMsg(mouse_data))
+                            };
+                            let _ = event_tx.send(msg);
                         }
                         CrossEvent::Resize(w, h) => {
-                            let _ = event_tx.send(Box::new(WindowSizeMsg::new(w, h)));
+                            let msg: Box<dyn Msg> = Box::new(WindowSizeMsg {
+                                width: w as usize,
+                                height: h as usize,
+                            });
+                            let _ = event_tx.send(msg);
                         }
                         _ => {}
                     }
@@ -236,23 +223,24 @@ impl<M: Model> Program<M> {
 
         // Send initial window size query
         if let Ok((w, h)) = term_size() {
-            let _ = tx.send(Box::new(WindowSizeMsg::new(w, h)));
+            let _ = tx.send(Box::new(WindowSizeMsg {
+                width: w as usize,
+                height: h as usize,
+            }));
         }
 
-        // Initial view render
-        self.renderer.write(self.model.view());
+        // Render initial view frame
+        let initial_view = self.model.view();
+        self.renderer.render(initial_view);
 
-        // Event loop processing
+        // Main event processing loop
         while let Ok(msg) = rx.recv() {
             if self.handle_msg(msg, &tx) {
                 break;
             }
         }
 
-        if self.enable_mouse {
-            self.renderer.disable_mouse_all_motion();
-        }
-        self.renderer.stop();
+        let _ = self.renderer.close();
         let _ = disable_raw_mode();
         Ok(self.model)
     }

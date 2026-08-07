@@ -1,8 +1,8 @@
-//! Cleanroom Rust port of upstream Go example: `examples/mouse/main.go`
-//! Upstream Target Tag / Version: `v1.3.4`
+use charming_bubbletea::{
+    quit, Cmd, KeyPressMsg, Model, MouseClickMsg, MouseMode, Msg, Program, View,
+};
 
-use charming_bubbletea::*;
-
+#[derive(Default)]
 struct MouseModel {
     last_event: String,
 }
@@ -13,35 +13,28 @@ impl Model for MouseModel {
     }
 
     fn update(&mut self, msg: Box<dyn Msg>) -> Cmd {
-        if let Some(key) = msg.as_ref().as_any().downcast_ref::<KeyMsg>() {
-            match key.to_string_rep().as_str() {
-                "ctrl+c" | "q" | "esc" => return quit(),
-                _ => {}
+        if let Some(k) = msg.as_any().downcast_ref::<KeyPressMsg>() {
+            if k.0.to_string() == "q" || k.0.to_string() == "ctrl+c" {
+                return quit();
             }
+        } else if let Some(m) = msg.as_any().downcast_ref::<MouseClickMsg>() {
+            self.last_event = format!("Clicked at ({}, {}) button {:?}", m.0.x, m.0.y, m.0.button);
         }
-
-        if let Some(mouse) = msg.as_ref().as_any().downcast_ref::<MouseMsg>() {
-            self.last_event = format!("(X: {}, Y: {}) {}", mouse.x, mouse.y, mouse);
-        }
-
         None
     }
 
-    fn view(&self) -> String {
-        format!(
-            "Do mouse stuff. When you're done press q to quit.\nLast event: {}\n",
+    fn view(&self) -> View {
+        let mut v = View::new(&format!(
+            "Mouse tracking active! Last event: {}\nPress q to quit.",
             self.last_event
-        )
+        ));
+        v.mouse_mode = MouseMode::MouseModeAllMotion;
+        v
     }
 }
 
-fn main() {
-    let p = Program::new(MouseModel {
-        last_event: String::new(),
-    })
-    .with_mouse();
-    if let Err(err) = p.run() {
-        eprintln!("Error running program: {}", err);
-        std::process::exit(1);
-    }
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let program = Program::new(MouseModel::default());
+    program.run()?;
+    Ok(())
 }

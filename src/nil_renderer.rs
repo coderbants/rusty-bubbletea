@@ -1,51 +1,40 @@
 //! Cleanroom Rust port of upstream Go source file: `nil_renderer.go`
-//! Upstream Target Tag / Version: `v1.3.4`
+//! Upstream Target Tag / Version: `v2.0.8`
 //!
 //! <public-docs>
 //! # Nil Renderer
 //!
-//! NilRenderer is a no-op implementation of Renderer for headless or testing environments.
+//! No-op implementation of `Renderer` trait for headless testing in Bubble Tea v2.0.8.
 //! </public-docs>
 
-use crate::model::Msg;
+use crate::model::Cmd;
+use crate::mouse::MouseMsg;
 use crate::renderer::Renderer;
+use crate::view::View;
 
-/// <upstream-comment>
 /// NilRenderer is a no-op renderer implementation.
-/// </upstream-comment>
 #[derive(Debug, Default, Clone, Copy)]
 pub struct NilRenderer;
 
 impl Renderer for NilRenderer {
     fn start(&mut self) {}
-    fn stop(&mut self) {}
-    fn kill(&mut self) {}
-    fn write(&mut self, _s: String) {}
-    fn handle_message(&mut self, _msg: &dyn Msg) {}
-    fn repaint(&mut self) {}
+    fn close(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    }
+    fn render(&mut self, _view: View) {}
+    fn flush(&mut self, _closing: bool) -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    }
+    fn reset(&mut self) {}
+    fn insert_above(&mut self, _s: String) -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    }
+    fn resize(&mut self, _width: usize, _height: usize) {}
     fn clear_screen(&mut self) {}
-    fn alt_screen(&self) -> bool {
-        false
+    fn write_string(&mut self, _s: &str) -> Result<usize, Box<dyn std::error::Error>> {
+        Ok(0)
     }
-    fn enter_alt_screen(&mut self) {}
-    fn exit_alt_screen(&mut self) {}
-    fn show_cursor(&mut self) {}
-    fn hide_cursor(&mut self) {}
-    fn enable_mouse_cell_motion(&mut self) {}
-    fn disable_mouse_cell_motion(&mut self) {}
-    fn enable_mouse_all_motion(&mut self) {}
-    fn disable_mouse_all_motion(&mut self) {}
-    fn enable_mouse_sgr_mode(&mut self) {}
-    fn disable_mouse_sgr_mode(&mut self) {}
-    fn enable_bracketed_paste(&mut self) {}
-    fn disable_bracketed_paste(&mut self) {}
-    fn bracketed_paste_active(&self) -> bool {
-        false
+    fn on_mouse(&mut self, _msg: MouseMsg) -> Cmd {
+        None
     }
-    fn set_window_title(&mut self, _title: &str) {}
-    fn report_focus(&self) -> bool {
-        false
-    }
-    fn enable_report_focus(&mut self) {}
-    fn disable_report_focus(&mut self) {}
 }

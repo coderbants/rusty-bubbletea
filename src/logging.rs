@@ -1,50 +1,42 @@
 //! Cleanroom Rust port of upstream Go source file: `logging.go`
-//! Upstream Target Tag / Version: `v1.3.4`
+//! Upstream Target Tag / Version: `v2.0.8`
 //!
 //! <public-docs>
-//! # Logging
+//! # Logging Utilities
 //!
-//! Logging utilities for writing debug logs to a file without interfering with terminal UI rendering.
+//! Logging helpers (`log_to_file`, `FileLogger`) for logging to file without corrupting the TUI.
 //! </public-docs>
 
 use std::fs::{File, OpenOptions};
-use std::io::{self, Write};
-use std::sync::Mutex;
+use std::io::Write;
 
-/// <upstream-comment>
-/// LogToFile sets up default logging to log to a file.
-/// </upstream-comment>
-pub fn log_to_file(path: &str, prefix: &str) -> io::Result<FileLogger> {
-    let file = OpenOptions::new()
-        .create(true)
-        .write(true)
-        .append(true)
-        .open(path)?;
-
-    let formatted_prefix = if !prefix.is_empty() && !prefix.ends_with(' ') {
-        format!("{} ", prefix)
-    } else {
-        prefix.to_string()
-    };
-
-    Ok(FileLogger {
-        file: Mutex::new(file),
-        prefix: formatted_prefix,
-    })
-}
-
-/// <upstream-comment>
-/// FileLogger is a thread-safe file logger.
-/// </upstream-comment>
+/// FileLogger utility struct.
 pub struct FileLogger {
-    file: Mutex<File>,
+    file: File,
     prefix: String,
 }
 
 impl FileLogger {
-    /// Logs a formatted message to the log file.
-    pub fn log(&self, msg: &str) -> io::Result<()> {
-        let mut f = self.file.lock().unwrap();
-        writeln!(f, "{}{}", self.prefix, msg)
+    /// Creates a new FileLogger.
+    pub fn new(path: &str, prefix: &str) -> Result<Self, std::io::Error> {
+        let file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(path)?;
+        let mut pref = prefix.to_string();
+        if !pref.is_empty() && !pref.ends_with(' ') {
+            pref.push(' ');
+        }
+        Ok(Self { file, prefix: pref })
     }
+
+    /// Logs a string line.
+    pub fn log(&mut self, s: &str) {
+        let _ = writeln!(self.file, "{}{}", self.prefix, s);
+    }
+}
+
+/// Helper function to log to a file.
+pub fn log_to_file(path: &str, prefix: &str) -> Result<FileLogger, std::io::Error> {
+    FileLogger::new(path, prefix)
 }

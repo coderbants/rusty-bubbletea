@@ -1,19 +1,17 @@
 //! Cleanroom Rust port of upstream Go source file: `commands.go`
-//! Upstream Target Tag / Version: `v1.3.4`
+//! Upstream Target Tag / Version: `v2.0.8`
 //!
 //! <public-docs>
 //! # Commands
 //!
-//! Standard built-in commands for controlling program behavior and terminal state.
+//! Built-in command functions (`batch`, `sequence`, `every`, `tick`, `request_window_size`).
 //! </public-docs>
 
-use crate::model::Cmd;
+use crate::model::{Cmd, Msg};
 use std::fmt;
 use std::time::{Duration, SystemTime};
 
-/// <upstream-comment>
-/// BatchMsg is sent when multiple commands are batched.
-/// </upstream-comment>
+/// BatchMsg is sent when multiple commands are batched concurrently.
 pub struct BatchMsg(pub Vec<Cmd>);
 
 impl fmt::Debug for BatchMsg {
@@ -22,9 +20,7 @@ impl fmt::Debug for BatchMsg {
     }
 }
 
-/// <upstream-comment>
-/// SequenceMsg runs commands sequentially.
-/// </upstream-comment>
+/// SequenceMsg is used internally to run commands sequentially in order.
 pub struct SequenceMsg(pub Vec<Cmd>);
 
 impl fmt::Debug for SequenceMsg {
@@ -33,22 +29,16 @@ impl fmt::Debug for SequenceMsg {
     }
 }
 
-/// <upstream-comment>
-/// QuitMsg is sent when the program should terminate.
-/// </upstream-comment>
+/// QuitMsg signals the program to exit.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct QuitMsg;
 
-/// <upstream-comment>
 /// Quit is a command that signals the program to exit.
-/// </upstream-comment>
 pub fn quit() -> Cmd {
     Some(Box::new(|| Some(Box::new(QuitMsg))))
 }
 
-/// <upstream-comment>
-/// Batch combines multiple commands into a single command.
-/// </upstream-comment>
+/// Batch performs multiple commands concurrently with no ordering guarantees.
 pub fn batch(cmds: Vec<Cmd>) -> Cmd {
     let mut valid_cmds = Vec::new();
     for cmd in cmds {
@@ -56,15 +46,14 @@ pub fn batch(cmds: Vec<Cmd>) -> Cmd {
             valid_cmds.push(cmd);
         }
     }
-    if valid_cmds.is_empty() {
-        return None;
+    match valid_cmds.len() {
+        0 => None,
+        1 => valid_cmds.into_iter().next().unwrap(),
+        _ => Some(Box::new(move || Some(Box::new(BatchMsg(valid_cmds))))),
     }
-    Some(Box::new(move || Some(Box::new(BatchMsg(valid_cmds)))))
 }
 
-/// <upstream-comment>
 /// Sequence runs the given commands one at a time, in order.
-/// </upstream-comment>
 pub fn sequence(cmds: Vec<Cmd>) -> Cmd {
     let mut valid_cmds = Vec::new();
     for cmd in cmds {
@@ -72,18 +61,17 @@ pub fn sequence(cmds: Vec<Cmd>) -> Cmd {
             valid_cmds.push(cmd);
         }
     }
-    if valid_cmds.is_empty() {
-        return None;
+    match valid_cmds.len() {
+        0 => None,
+        1 => valid_cmds.into_iter().next().unwrap(),
+        _ => Some(Box::new(move || Some(Box::new(SequenceMsg(valid_cmds))))),
     }
-    Some(Box::new(move || Some(Box::new(SequenceMsg(valid_cmds)))))
 }
 
-/// <upstream-comment>
 /// Every is a command that ticks in sync with the system clock.
-/// </upstream-comment>
 pub fn every<F>(duration: Duration, fn_msg: F) -> Cmd
 where
-    F: FnOnce(SystemTime) -> Option<Box<dyn crate::model::Msg>> + Send + Sync + 'static,
+    F: FnOnce(SystemTime) -> Option<Box<dyn Msg>> + Send + Sync + 'static,
 {
     Some(Box::new(move || {
         let now = SystemTime::now();
@@ -102,12 +90,10 @@ where
     }))
 }
 
-/// <upstream-comment>
 /// Tick produces a command at an interval independent of system clock.
-/// </upstream-comment>
 pub fn tick<F>(duration: Duration, fn_msg: F) -> Cmd
 where
-    F: FnOnce(SystemTime) -> Option<Box<dyn crate::model::Msg>> + Send + Sync + 'static,
+    F: FnOnce(SystemTime) -> Option<Box<dyn Msg>> + Send + Sync + 'static,
 {
     Some(Box::new(move || {
         std::thread::sleep(duration);
@@ -115,73 +101,11 @@ where
     }))
 }
 
-/// <upstream-comment>
-/// EnterAltScreenMsg is a message to enter the alternate screen buffer.
-/// </upstream-comment>
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct EnterAltScreenMsg;
-
-/// <upstream-comment>
-/// EnterAltScreen returns a command that enters the alternate screen buffer.
-/// </upstream-comment>
-pub fn enter_alt_screen() -> Cmd {
-    Some(Box::new(|| Some(Box::new(EnterAltScreenMsg))))
-}
-
-/// <upstream-comment>
-/// ExitAltScreenMsg is a message to exit the alternate screen buffer.
-/// </upstream-comment>
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct ExitAltScreenMsg;
-
-/// <upstream-comment>
-/// ExitAltScreen returns a command that exits the alternate screen buffer.
-/// </upstream-comment>
-pub fn exit_alt_screen() -> Cmd {
-    Some(Box::new(|| Some(Box::new(ExitAltScreenMsg))))
-}
-
-/// <upstream-comment>
-/// SetWindowTitleMsg sets terminal window title.
-/// </upstream-comment>
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SetWindowTitleMsg(pub String);
-
-/// <upstream-comment>
-/// SetWindowTitle produces a command that sets the terminal title.
-/// </upstream-comment>
-pub fn set_window_title(title: &str) -> Cmd {
-    let t = title.to_string();
-    Some(Box::new(move || Some(Box::new(SetWindowTitleMsg(t)))))
-}
-
-/// <upstream-comment>
-/// RequestWindowSizeMsg signals a request to query window dimensions.
-/// </upstream-comment>
+/// RequestWindowSizeMsg is a message that requests terminal window size.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RequestWindowSizeMsg;
 
-/// <upstream-comment>
-/// WindowSize produces a command to query current terminal window size.
-/// </upstream-comment>
-pub fn window_size() -> Cmd {
+/// RequestWindowSize produces a command that queries terminal size.
+pub fn request_window_size() -> Cmd {
     Some(Box::new(|| Some(Box::new(RequestWindowSizeMsg))))
-}
-
-/// <upstream-comment>
-/// WindowSizeMsg conveys window dimensions (width, height).
-/// </upstream-comment>
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct WindowSizeMsg {
-    /// Width of terminal in columns.
-    pub width: u16,
-    /// Height of terminal in rows.
-    pub height: u16,
-}
-
-impl WindowSizeMsg {
-    /// Creates a new WindowSizeMsg.
-    pub fn new(width: u16, height: u16) -> Self {
-        Self { width, height }
-    }
 }

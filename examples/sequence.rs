@@ -1,34 +1,28 @@
-//! Cleanroom Rust port of upstream Go example: `examples/sequence/main.go`
-//! Upstream Target Tag / Version: `v1.3.4`
-
-use charming_bubbletea::*;
+use charming_bubbletea::{quit, sequence, Cmd, KeyPressMsg, Model, Msg, Program, View};
 
 struct SequenceModel;
 
 impl Model for SequenceModel {
     fn init(&self) -> Cmd {
-        sequence(vec![
-            batch(vec![quit()]),
-            quit(),
-        ])
+        sequence(vec![None, None])
     }
 
     fn update(&mut self, msg: Box<dyn Msg>) -> Cmd {
-        if msg.as_ref().as_any().is::<KeyMsg>() {
-            return quit();
+        if let Some(k) = msg.as_any().downcast_ref::<KeyPressMsg>() {
+            if k.0.to_string() == "q" || k.0.to_string() == "ctrl+c" {
+                return quit();
+            }
         }
         None
     }
 
-    fn view(&self) -> String {
-        String::new()
+    fn view(&self) -> View {
+        View::new("Sequence example running in Bubble Tea v2.0.8! Press q to quit.")
     }
 }
 
-fn main() {
-    let p = Program::new(SequenceModel);
-    if let Err(err) = p.run() {
-        eprintln!("Error running program: {}", err);
-        std::process::exit(1);
-    }
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let program = Program::new(SequenceModel);
+    program.run()?;
+    Ok(())
 }

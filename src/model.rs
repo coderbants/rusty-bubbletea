@@ -1,20 +1,25 @@
-//! Cleanroom Rust port of upstream Go source file: `tea.go` / `model.go`
-//! Upstream Target Tag / Version: `v1.3.4`
+//! Cleanroom Rust port of upstream Go source file: `tea.go` (Model interface)
+//! Upstream Target Tag / Version: `v2.0.8`
 //!
-//! <public-docs>
-//! # Model
+//! <upstream-docs>
+//! Package tea provides a framework for building rich terminal user interfaces
+//! based on the paradigms of The Elm Architecture. It's well-suited for simple
+//! and complex terminal applications, either inline, full-window, or a mix of
+//! both. It's been battle-tested in several large projects and is
+//! production-ready.
 //!
-//! Model defines the core state interface for Elm-architecture applications in Bubble Tea.
-//! </public-docs>
+//! A tutorial is available at https://github.com/charmbracelet/bubbletea/tree/master/tutorials
+//!
+//! Example programs can be found at https://github.com/charmbracelet/bubbletea/tree/master/examples
+//! </upstream-docs>
 
+use crate::view::View;
 use std::any::Any;
 use std::fmt::Debug;
 
-/// <upstream-comment>
-/// Msg represents an action or event in the Bubble Tea program.
-/// </upstream-comment>
+/// Msg represents an event message delivered to the Model's Update function.
 pub trait Msg: Any + Send + Sync + Debug {
-    /// Helper to downcast Msg trait objects to concrete types.
+    /// Helper to downcast to Any.
     fn as_any(&self) -> &dyn Any;
 }
 
@@ -24,30 +29,19 @@ impl<T: Any + Send + Sync + Debug> Msg for T {
     }
 }
 
-/// <upstream-comment>
-/// Cmd is an asynchronous operation that performs I/O and returns a Msg.
-/// </upstream-comment>
-pub type Cmd = Option<Box<dyn FnOnce() -> Option<Box<dyn Msg>> + Send + Sync + 'static>>;
+/// Cmd is an asynchronous command closure returning an optional Msg.
+pub type Cmd = Option<Box<dyn FnOnce() -> Option<Box<dyn Msg>> + Send + Sync>>;
 
-/// <upstream-comment>
-/// Model contains the program state and defines how to handle messages
-/// and render the view.
-/// </upstream-comment>
-pub trait Model: Send + Sync + 'static {
-    /// <upstream-comment>
-    /// Init is the first command that will be executed when the program starts.
-    /// </upstream-comment>
+/// Model defines the application state machine according to The Elm Architecture in Bubble Tea v2.0.8.
+pub trait Model: Send + Sync + Sized + 'static {
+    /// Init is called when the program starts, returning an optional initial command.
     fn init(&self) -> Cmd {
         None
     }
 
-    /// <upstream-comment>
-    /// Update is called when a message is received from the event loop.
-    /// </upstream-comment>
+    /// Update receives a message and returns an updated Model and optional command.
     fn update(&mut self, msg: Box<dyn Msg>) -> Cmd;
 
-    /// <upstream-comment>
-    /// View renders the program's UI as a string.
-    /// </upstream-comment>
-    fn view(&self) -> String;
+    /// View renders the program's UI as a declarative `View` struct.
+    fn view(&self) -> View;
 }

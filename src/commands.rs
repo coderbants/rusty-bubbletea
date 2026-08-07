@@ -79,6 +79,30 @@ pub fn sequence(cmds: Vec<Cmd>) -> Cmd {
 }
 
 /// <upstream-comment>
+/// Every is a command that ticks in sync with the system clock.
+/// </upstream-comment>
+pub fn every<F>(duration: Duration, fn_msg: F) -> Cmd
+where
+    F: FnOnce(SystemTime) -> Option<Box<dyn crate::model::Msg>> + Send + Sync + 'static,
+{
+    Some(Box::new(move || {
+        let now = SystemTime::now();
+        if let Ok(elapsed) = now.duration_since(SystemTime::UNIX_EPOCH) {
+            let nanos = elapsed.as_nanos();
+            let dur_nanos = duration.as_nanos();
+            if dur_nanos > 0 {
+                let rem = nanos % dur_nanos;
+                let sleep_nanos = dur_nanos - rem;
+                std::thread::sleep(Duration::from_nanos(sleep_nanos as u64));
+            }
+        } else {
+            std::thread::sleep(duration);
+        }
+        fn_msg(SystemTime::now())
+    }))
+}
+
+/// <upstream-comment>
 /// Tick produces a command at an interval independent of system clock.
 /// </upstream-comment>
 pub fn tick<F>(duration: Duration, fn_msg: F) -> Cmd

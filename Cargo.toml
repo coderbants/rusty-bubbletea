@@ -6,7 +6,7 @@ description = "Cleanroom Rust port of Charmbracelet's Bubble Tea (v1.3.4) TUI El
 license = "MIT"
 
 [dependencies]
-charming-lipgloss = { path = "../charming-lipgloss" }
+charming-lipgloss = { version = "2.0.5", path = "../charming-lipgloss" }
 tokio = { version = "1.38", features = ["full"] }
 tokio-stream = "0.1"
 crossterm = "0.27"

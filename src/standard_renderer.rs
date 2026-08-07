@@ -13,7 +13,7 @@ use crate::model::Msg;
 use crate::renderer::Renderer;
 use crate::screen::PrintlnMsg;
 use crossterm::{
-    cursor::{Hide, MoveToColumn, MoveToPreviousLine, Show},
+    cursor::{Hide, Show},
     execute,
     terminal::{
         Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen, SetTitle,
@@ -33,7 +33,8 @@ pub struct StandardRenderer {
     mtx: Mutex<()>,
     buf: String,
     queued_message_lines: Vec<String>,
-    framerate: Duration,
+    /// Target framerate duration.
+    pub framerate: Duration,
     last_render: String,
     last_rendered_lines: Vec<String>,
     lines_rendered: usize,

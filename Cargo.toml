@@ -1,0 +1,20 @@
+[package]
+name = "charming-bubbletea"
+version = "1.3.4"
+edition = "2021"
+description = "Cleanroom Rust port of Charmbracelet's Bubble Tea (v1.3.4) TUI Elm architecture framework"
+license = "MIT"
+
+[dependencies]
+charming-lipgloss = { path = "../charming-lipgloss" }
+tokio = { version = "1.38", features = ["full"] }
+tokio-stream = "0.1"
+crossterm = "0.27"
+futures = "0.3"
+
+[dev-dependencies]
+tokio-test = "0.4"
+
+[lib]
+name = "charming_bubbletea"
+path = "src/lib.rs"

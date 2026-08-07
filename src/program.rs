@@ -15,7 +15,6 @@ use crate::key::{KeyMsg, KeyType};
 use crate::model::{Model, Msg};
 use crate::mouse::{MouseAction, MouseButton, MouseMsg};
 use crate::renderer::Renderer;
-use crate::screen::PrintlnMsg;
 use crate::standard_renderer::StandardRenderer;
 
 use crossterm::{
@@ -86,8 +85,6 @@ impl<M: Model> Program<M> {
             if let Ok((w, h)) = term_size() {
                 let _ = tx.send(Box::new(WindowSizeMsg::new(w, h)));
             }
-        } else if let Some(println_msg) = processed_msg.as_ref().as_any().downcast_ref::<PrintlnMsg>() {
-            println!("{}", println_msg.0);
         }
 
         if let Some(_batch_msg) = processed_msg.as_ref().as_any().downcast_ref::<BatchMsg>() {

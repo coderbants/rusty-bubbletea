@@ -4,11 +4,10 @@
 //! <public-docs>
 //! # Screen
 //!
-//! Screen buffer command constructors and screen state messages (`ClearScreen`, `HideCursor`, `ShowCursor`, `EnableMouseCellMotion`, `EnableMouseAllMotion`, `DisableMouse`, `EnableBracketedPaste`, `DisableBracketedPaste`, `EnableReportFocus`, `DisableReportFocus`, `Print`, `Printf`, `Println`).
+//! Screen buffer command constructors and screen state messages (`ClearScreen`, `HideCursor`, `ShowCursor`, `EnableMouseCellMotion`, `EnableMouseAllMotion`, `DisableMouse`, `EnableBracketedPaste`, `DisableBracketedPaste`, `EnableReportFocus`, `DisableReportFocus`).
 //! </public-docs>
 
-use crate::model::{Cmd, Msg};
-use std::fmt;
+use crate::model::Cmd;
 
 /// ClearScreenMsg tells the program to clear the screen buffer.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -17,22 +16,6 @@ pub struct ClearScreenMsg;
 /// ClearScreen returns a command to clear the screen.
 pub fn clear_screen() -> Cmd {
     Some(Box::new(|| Some(Box::new(ClearScreenMsg))))
-}
-
-/// PrintlnMsg represents a line printed above the TUI.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PrintlnMsg(pub String);
-
-/// Println prints a line above the TUI.
-pub fn print_ln(s: &str) -> Cmd {
-    let text = s.to_string();
-    Some(Box::new(move || Some(Box::new(PrintlnMsg(text)))))
-}
-
-/// Printf prints formatted output above the TUI.
-pub fn print_f(args: fmt::Arguments<'_>) -> Cmd {
-    let text = args.to_string();
-    Some(Box::new(move || Some(Box::new(PrintlnMsg(text)))))
 }
 
 /// HideCursorMsg hides terminal cursor.

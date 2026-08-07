@@ -3,7 +3,9 @@
 
 use charming_bubbletea::*;
 
-struct WindowSizeModel {}
+struct WindowSizeModel {
+    size_info: String,
+}
 
 impl Model for WindowSizeModel {
     fn init(&self) -> Cmd {
@@ -19,19 +21,24 @@ impl Model for WindowSizeModel {
         }
 
         if let Some(ws) = msg.as_ref().as_any().downcast_ref::<WindowSizeMsg>() {
-            return print_f(format_args!("{}x{}", ws.width, ws.height));
+            self.size_info = format!("{}x{}", ws.width, ws.height);
         }
 
         None
     }
 
     fn view(&self) -> String {
-        "When you're done press q to quit. Press any other key to query the window-size.\n".to_string()
+        format!(
+            "When you're done press q to quit. Window size: {}\n",
+            self.size_info
+        )
     }
 }
 
 fn main() {
-    let p = Program::new(WindowSizeModel {});
+    let p = Program::new(WindowSizeModel {
+        size_info: "Unknown".to_string(),
+    });
     if let Err(err) = p.run() {
         eprintln!("Error running program: {}", err);
         std::process::exit(1);

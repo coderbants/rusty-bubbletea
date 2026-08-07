@@ -7,6 +7,7 @@
 //! NilRenderer is a no-op implementation of Renderer for headless or testing environments.
 //! </public-docs>
 
+use crate::model::Msg;
 use crate::renderer::Renderer;
 
 /// <upstream-comment>
@@ -20,6 +21,7 @@ impl Renderer for NilRenderer {
     fn stop(&mut self) {}
     fn kill(&mut self) {}
     fn write(&mut self, _s: String) {}
+    fn handle_message(&mut self, _msg: &dyn Msg) {}
     fn repaint(&mut self) {}
     fn clear_screen(&mut self) {}
     fn alt_screen(&self) -> bool {

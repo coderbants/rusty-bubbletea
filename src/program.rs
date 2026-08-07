@@ -84,6 +84,8 @@ impl<M: Model> Program<M> {
             return true;
         }
 
+        self.renderer.handle_message(processed_msg.as_ref());
+
         if processed_msg.as_ref().as_any().is::<EnterAltScreenMsg>() {
             self.renderer.enter_alt_screen();
         } else if processed_msg.as_ref().as_any().is::<ExitAltScreenMsg>() {

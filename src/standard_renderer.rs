@@ -7,7 +7,10 @@
 //! StandardRenderer is a framerate-based terminal renderer updating the view to avoid overloading terminal emulators.
 //! </public-docs>
 
+use crate::commands::WindowSizeMsg;
+use crate::model::Msg;
 use crate::renderer::Renderer;
+use crate::screen::PrintlnMsg;
 use crossterm::{
     cursor::{Hide, MoveToPreviousLine, Show},
     execute,
@@ -28,6 +31,9 @@ pub struct StandardRenderer {
     lines_rendered: usize,
     alt_screen_active: bool,
     cursor_hidden: bool,
+    queued_message_lines: Vec<String>,
+    width: u16,
+    height: u16,
     /// Framerate interval for flushing output.
     pub framerate: Duration,
 }
@@ -47,6 +53,9 @@ impl StandardRenderer {
             lines_rendered: 0,
             alt_screen_active: false,
             cursor_hidden: false,
+            queued_message_lines: Vec::new(),
+            width: 0,
+            height: 0,
             framerate: Duration::from_millis(1000 / effective_fps as u64),
         }
     }
@@ -66,6 +75,14 @@ impl Renderer for StandardRenderer {
     }
 
     fn write(&mut self, s: String) {
+        let flush_queued = !self.queued_message_lines.is_empty() && !self.alt_screen_active;
+
+        if flush_queued {
+            for line in self.queued_message_lines.drain(..) {
+                println!("\r{}", line);
+            }
+        }
+
         if self.lines_rendered > 1 {
             let _ = execute!(stdout(), MoveToPreviousLine((self.lines_rendered - 1) as u16));
         } else if self.lines_rendered == 1 {
@@ -80,6 +97,22 @@ impl Renderer for StandardRenderer {
             self.lines_rendered = s.lines().count().max(1);
         } else {
             self.lines_rendered = 0;
+        }
+    }
+
+    fn handle_message(&mut self, msg: &dyn Msg) {
+        if let Some(ws) = msg.as_any().downcast_ref::<WindowSizeMsg>() {
+            self.width = ws.width;
+            self.height = ws.height;
+            self.repaint();
+        } else if let Some(println_msg) = msg.as_any().downcast_ref::<PrintlnMsg>() {
+            if !self.alt_screen_active {
+                for line in println_msg.0.split('\n') {
+                    let s: String = line.to_string();
+                    self.queued_message_lines.push(s);
+                }
+                self.repaint();
+            }
         }
     }
 

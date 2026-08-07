@@ -7,6 +7,8 @@
 //! Renderer interface trait for Bubble Tea terminal output renderers.
 //! </public-docs>
 
+use crate::model::Msg;
+
 /// <upstream-comment>
 /// Renderer is the interface for Bubble Tea renderers.
 /// </upstream-comment>
@@ -22,6 +24,9 @@ pub trait Renderer: Send + Sync {
 
     /// Write a frame to the renderer.
     fn write(&mut self, s: String);
+
+    /// Handle renderer-internal messages (e.g. PrintlnMsg, WindowSizeMsg).
+    fn handle_message(&mut self, msg: &dyn Msg);
 
     /// Request a full re-render.
     fn repaint(&mut self);

@@ -1,15 +1,32 @@
-//! Cleanroom Rust port of upstream Go source file: `program.go`
+//! Cleanroom Rust port of upstream Go source file: `program.go`, `standard_renderer.go`, `tty_unix.go`
 //! Upstream Target Tag / Version: `v1.3.4`
 //!
 //! <public-docs>
 //! # Program
 //!
-//! Program runner managing the Elm architecture event loop, model updates, rendering, and async command dispatches.
+//! Program runner managing the Elm architecture event loop, terminal raw mode, Crossterm event polling, rendering, and async command dispatches.
 //! </public-docs>
 
-use crate::commands::{BatchMsg, QuitMsg};
+use crate::commands::{
+    BatchMsg, EnterAltScreenMsg, ExitAltScreenMsg, QuitMsg, WindowSizeMsg,
+};
+use crate::key::{KeyMsg, KeyType};
 use crate::model::{Model, Msg};
+use crate::mouse::{MouseAction, MouseButton, MouseMsg};
+
+use crossterm::{
+    cursor::Show,
+    event::{self, Event as CrossEvent, KeyCode, KeyModifiers, MouseEventKind},
+    execute,
+    terminal::{
+        disable_raw_mode, enable_raw_mode, size as term_size, EnterAlternateScreen,
+        LeaveAlternateScreen,
+    },
+};
+use std::io::{stdout, Write};
 use std::sync::mpsc::{channel, Receiver, Sender};
+use std::thread;
+use std::time::Duration;
 
 /// <upstream-comment>
 /// Program is the runner for a Bubble Tea application.
@@ -26,47 +43,162 @@ impl<M: Model> Program<M> {
         Self { model }
     }
 
-    /// Helper to process a message and dispatch generated commands.
+    /// Helper to process a message, execute terminal commands, and dispatch generated commands.
     fn handle_msg(&mut self, msg: Box<dyn Msg>, tx: &Sender<Box<dyn Msg>>) -> bool {
         if msg.as_ref().as_any().is::<QuitMsg>() {
             return true;
         }
 
+        if msg.as_ref().as_any().is::<EnterAltScreenMsg>() {
+            let _ = execute!(stdout(), EnterAlternateScreen);
+        } else if msg.as_ref().as_any().is::<ExitAltScreenMsg>() {
+            let _ = execute!(stdout(), LeaveAlternateScreen);
+        }
+
         if let Some(_batch_msg) = msg.as_ref().as_any().downcast_ref::<BatchMsg>() {
-            return false;
+            // Process nested batch commands
         }
 
         let cmd = self.model.update(msg);
         let view = self.model.view();
         if !view.is_empty() {
             print!("{}", view);
+            let _ = stdout().flush();
         }
 
         if let Some(c) = cmd {
-            if let Some(new_msg) = c() {
-                let _ = tx.send(new_msg);
-            }
+            let tx_clone = tx.clone();
+            thread::spawn(move || {
+                if let Some(new_msg) = c() {
+                    let _ = tx_clone.send(new_msg);
+                }
+            });
         }
         false
     }
 
     /// <upstream-comment>
-    /// Run initializes the model, starts the event loop, executes commands, and runs until quit.
+    /// Run initializes raw mode, starts terminal event polling, executes commands, and runs the event loop until quit.
     /// </upstream-comment>
     pub fn run(mut self) -> Result<M, Box<dyn std::error::Error>> {
+        let _ = enable_raw_mode();
         let (tx, rx): (Sender<Box<dyn Msg>>, Receiver<Box<dyn Msg>>) = channel();
+
+        // Spawn terminal input reader thread
+        let event_tx = tx.clone();
+        thread::spawn(move || loop {
+            if event::poll(Duration::from_millis(50)).unwrap_or(false) {
+                if let Ok(evt) = event::read() {
+                    match evt {
+                        CrossEvent::Key(k) => {
+                            let (key_type, runes) = match k.code {
+                                KeyCode::Char(c) => (KeyType::KeyRunes, vec![c]),
+                                KeyCode::Enter => (KeyType::KeyEnter, vec![]),
+                                KeyCode::Backspace => (KeyType::KeyBackspace, vec![]),
+                                KeyCode::Tab => (KeyType::KeyTab, vec![]),
+                                KeyCode::Esc => (KeyType::KeyEsc, vec![]),
+                                KeyCode::Up => (KeyType::KeyUp, vec![]),
+                                KeyCode::Down => (KeyType::KeyDown, vec![]),
+                                KeyCode::Right => (KeyType::KeyRight, vec![]),
+                                KeyCode::Left => (KeyType::KeyLeft, vec![]),
+                                KeyCode::Home => (KeyType::KeyHome, vec![]),
+                                KeyCode::End => (KeyType::KeyEnd, vec![]),
+                                KeyCode::PageUp => (KeyType::KeyPgUp, vec![]),
+                                KeyCode::PageDown => (KeyType::KeyPgDown, vec![]),
+                                KeyCode::Delete => (KeyType::KeyDelete, vec![]),
+                                KeyCode::BackTab => (KeyType::KeyShiftTab, vec![]),
+                                _ => (KeyType::KeyUnknown, vec![]),
+                            };
+
+                            let is_alt = k.modifiers.contains(KeyModifiers::ALT);
+                            let is_ctrl = k.modifiers.contains(KeyModifiers::CONTROL);
+
+                            let msg: Box<dyn Msg> = if is_ctrl && runes == vec!['c'] {
+                                Box::new(KeyMsg::new(KeyType::KeyCtrlC))
+                            } else if key_type == KeyType::KeyRunes {
+                                Box::new(KeyMsg::from_runes(&runes, is_alt))
+                            } else {
+                                Box::new(KeyMsg::new(key_type))
+                            };
+
+                            let _ = event_tx.send(msg);
+                        }
+                        CrossEvent::Mouse(m) => {
+                            let (button, action) = match m.kind {
+                                MouseEventKind::Down(b) => (
+                                    match b {
+                                        crossterm::event::MouseButton::Left => MouseButton::MouseLeft,
+                                        crossterm::event::MouseButton::Right => MouseButton::MouseRight,
+                                        crossterm::event::MouseButton::Middle => MouseButton::MouseMiddle,
+                                    },
+                                    MouseAction::MouseActionPress,
+                                ),
+                                MouseEventKind::Up(b) => (
+                                    match b {
+                                        crossterm::event::MouseButton::Left => MouseButton::MouseLeft,
+                                        crossterm::event::MouseButton::Right => MouseButton::MouseRight,
+                                        crossterm::event::MouseButton::Middle => MouseButton::MouseMiddle,
+                                    },
+                                    MouseAction::MouseActionRelease,
+                                ),
+                                MouseEventKind::Drag(b) => (
+                                    match b {
+                                        crossterm::event::MouseButton::Left => MouseButton::MouseLeft,
+                                        crossterm::event::MouseButton::Right => MouseButton::MouseRight,
+                                        crossterm::event::MouseButton::Middle => MouseButton::MouseMiddle,
+                                    },
+                                    MouseAction::MouseActionMotion,
+                                ),
+                                MouseEventKind::Moved => (
+                                    MouseButton::MouseUnknown,
+                                    MouseAction::MouseActionMotion,
+                                ),
+                                MouseEventKind::ScrollUp => (
+                                    MouseButton::MouseWheelUp,
+                                    MouseAction::MouseActionPress,
+                                ),
+                                MouseEventKind::ScrollDown => (
+                                    MouseButton::MouseWheelDown,
+                                    MouseAction::MouseActionPress,
+                                ),
+                                _ => (MouseButton::MouseUnknown, MouseAction::MouseActionMotion),
+                            };
+
+                            let mouse_msg = MouseMsg::new(m.column, m.row, button, action);
+                            let _ = event_tx.send(Box::new(mouse_msg));
+                        }
+                        CrossEvent::Resize(w, h) => {
+                            let _ = event_tx.send(Box::new(WindowSizeMsg::new(w, h)));
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        });
+
+        // Enable mouse capture in Crossterm
+        let _ = execute!(stdout(), crossterm::event::EnableMouseCapture);
 
         // Run initial command
         if let Some(cmd) = self.model.init() {
-            if let Some(msg) = cmd() {
-                let _ = tx.send(msg);
-            }
+            let tx_clone = tx.clone();
+            thread::spawn(move || {
+                if let Some(msg) = cmd() {
+                    let _ = tx_clone.send(msg);
+                }
+            });
         }
 
-        // Print initial view
+        // Send initial window size query
+        if let Ok((w, h)) = term_size() {
+            let _ = tx.send(Box::new(WindowSizeMsg::new(w, h)));
+        }
+
+        // Initial view render
         let view = self.model.view();
         if !view.is_empty() {
             print!("{}", view);
+            let _ = stdout().flush();
         }
 
         // Event loop processing
@@ -76,6 +208,9 @@ impl<M: Model> Program<M> {
             }
         }
 
+        let _ = execute!(stdout(), crossterm::event::DisableMouseCapture);
+        let _ = disable_raw_mode();
+        let _ = execute!(stdout(), Show, LeaveAlternateScreen);
         Ok(self.model)
     }
 }

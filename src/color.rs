@@ -33,80 +33,103 @@ impl Color {
         format!("#{:02x}{:02x}{:02x}", self.r, self.g, self.b)
     }
 
-    /// Calculates luminance to report if the color is dark.
+    /// Returns whether the color is dark.
     pub fn is_dark(&self) -> bool {
         let lum = 0.299 * (self.r as f64) + 0.587 * (self.g as f64) + 0.114 * (self.b as f64);
         lum < 128.0
     }
 }
 
-/// RequestBackgroundColorMsg requests terminal background color.
+/// RequestBackgroundColor is a command that requests the terminal background color.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RequestBackgroundColorMsg;
 
-/// RequestBackgroundColor produces a command that requests terminal background color.
+/// RequestBackgroundColor is a command that requests the terminal background color.
 pub fn request_background_color() -> Cmd {
     Some(Box::new(|| Some(Box::new(RequestBackgroundColorMsg))))
 }
 
-/// RequestForegroundColorMsg requests terminal foreground color.
+/// RequestForegroundColorMsg is a message that requests the terminal foreground color.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RequestForegroundColorMsg;
 
-/// RequestForegroundColor produces a command that requests terminal foreground color.
+/// RequestForegroundColor is a command that requests the terminal foreground color.
 pub fn request_foreground_color() -> Cmd {
     Some(Box::new(|| Some(Box::new(RequestForegroundColorMsg))))
 }
 
-/// RequestCursorColorMsg requests terminal cursor color.
+/// RequestCursorColorMsg is a message that requests the terminal cursor color.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RequestCursorColorMsg;
 
-/// RequestCursorColor produces a command that requests terminal cursor color.
+/// RequestCursorColor is a command that requests the terminal cursor color.
 pub fn request_cursor_color() -> Cmd {
     Some(Box::new(|| Some(Box::new(RequestCursorColorMsg))))
 }
 
-/// ForegroundColorMsg conveys terminal foreground color.
+/// ForegroundColorMsg represents a foreground color message. This message is
+/// emitted when the program requests the terminal foreground color with the
+/// `request_foreground_color` command.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ForegroundColorMsg(pub Color);
 
 impl ForegroundColorMsg {
-    /// Returns hex string.
+    /// Returns the hex representation of the color.
     pub fn to_hex(&self) -> String {
         self.0.to_hex()
     }
-    /// Returns whether color is dark.
+
+    /// Returns whether the color is dark.
     pub fn is_dark(&self) -> bool {
         self.0.is_dark()
     }
 }
 
-/// BackgroundColorMsg conveys terminal background color.
+/// BackgroundColorMsg represents a background color message. This message is
+/// emitted when the program requests the terminal background color with the
+/// `request_background_color` command.
+///
+/// This is commonly used in `Model::init` to get the terminal background color
+/// for style definitions. For that you'll want to call `is_dark()` to determine
+/// if the color is dark or light. For example:
+///
+/// ```rust,ignore
+/// fn init(&self) -> Cmd { request_background_color() }
+///
+/// fn update(&mut self, msg: Box<dyn Msg>) -> Cmd {
+///     if let Some(bg) = msg.as_any().downcast_ref::<BackgroundColorMsg>() {
+///         self.styles = new_styles(bg.is_dark());
+///     }
+///     None
+/// }
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BackgroundColorMsg(pub Color);
 
 impl BackgroundColorMsg {
-    /// Returns hex string.
+    /// Returns the hex representation of the color.
     pub fn to_hex(&self) -> String {
         self.0.to_hex()
     }
-    /// Returns whether color is dark.
+
+    /// Returns whether the color is dark.
     pub fn is_dark(&self) -> bool {
         self.0.is_dark()
     }
 }
 
-/// CursorColorMsg conveys terminal cursor color.
+/// CursorColorMsg represents a cursor color change message. This message is
+/// emitted when the program requests the terminal cursor color.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CursorColorMsg(pub Color);
 
 impl CursorColorMsg {
-    /// Returns hex string.
+    /// Returns the hex representation of the color.
     pub fn to_hex(&self) -> String {
         self.0.to_hex()
     }
-    /// Returns whether color is dark.
+
+    /// Returns whether the color is dark.
     pub fn is_dark(&self) -> bool {
         self.0.is_dark()
     }

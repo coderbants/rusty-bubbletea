@@ -57,6 +57,7 @@ pub struct Cursor {
 pub struct RequestCursorPosMsg;
 
 /// RequestCursorPosition is a command that requests the cursor position.
+/// The cursor position will be sent as a [`CursorPositionMsg`] message.
 pub fn request_cursor_position() -> Cmd {
     Some(Box::new(|| Some(Box::new(RequestCursorPosMsg))))
 }

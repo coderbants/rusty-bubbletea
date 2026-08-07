@@ -27,7 +27,9 @@ impl fmt::Display for TerminalVersionMsg {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RequestTerminalVersionMsg;
 
-/// RequestTerminalVersion produces a command that queries terminal version using XTVERSION.
+/// RequestTerminalVersion is a command that queries the terminal for its
+/// version using XTVERSION. Note that some terminals may not support this
+/// command.
 pub fn request_terminal_version() -> Cmd {
     Some(Box::new(|| Some(Box::new(RequestTerminalVersionMsg))))
 }

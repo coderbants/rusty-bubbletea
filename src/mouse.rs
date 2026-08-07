@@ -10,7 +10,21 @@
 use crate::key::KeyMod;
 use std::fmt;
 
-/// MouseButton enum matching X11 button codes.
+/// MouseButton represents the button that was pressed during a mouse message.
+///
+/// This is based on X11 mouse button codes:
+///
+/// - `1` = left button
+/// - `2` = middle button (pressing the scroll wheel)
+/// - `3` = right button
+/// - `4` = turn scroll wheel up
+/// - `5` = turn scroll wheel down
+/// - `6` = push scroll wheel left
+/// - `7` = push scroll wheel right
+/// - `8` = 4th button (aka browser backward button)
+/// - `9` = 5th button (aka browser forward button)
+///
+/// Other buttons are not supported.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MouseButton {
     /// No button.
@@ -39,7 +53,11 @@ pub enum MouseButton {
     MouseButton11 = 11,
 }
 
-/// Mouse event data struct.
+/// Mouse represents a mouse event. Use the specific message types
+/// (`MouseClickMsg`, `MouseReleaseMsg`, etc.) to match individual events.
+///
+/// The X and Y coordinates are zero-based, with (0,0) being the upper left
+/// corner of the terminal.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Mouse {
     /// Zero-based X coordinate (column).

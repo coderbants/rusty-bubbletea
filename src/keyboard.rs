@@ -29,35 +29,44 @@ pub struct KeyboardEnhancements {
     pub report_associated_text: bool,
 }
 
-/// KeyboardEnhancementsMsg is sent when the terminal supports keyboard enhancements.
+/// KeyboardEnhancementsMsg is a message that gets sent when the terminal
+/// supports keyboard enhancements.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct KeyboardEnhancementsMsg {
-    /// Flags bitmask of enabled features.
+    /// Flags is a bitmask of enabled keyboard enhancement features. A non-zero
+    /// value indicates that at least we have key disambiguation support.
+    ///
+    /// Use the `supports_*` methods for the easy way to check individual flags.
     pub flags: i32,
 }
 
 impl KeyboardEnhancementsMsg {
-    /// Returns whether terminal supports key disambiguation.
+    /// SupportsKeyDisambiguation returns whether the terminal supports key
+    /// disambiguation (e.g., distinguishing between different modifier keys).
     pub fn supports_key_disambiguation(&self) -> bool {
         self.flags > 0
     }
 
-    /// Returns whether terminal supports reporting press, release, and repeat event types.
+    /// SupportsEventTypes returns whether the terminal supports reporting
+    /// different types of key events (press, release, and repeat).
     pub fn supports_event_types(&self) -> bool {
         (self.flags & KITTY_REPORT_EVENT_TYPES) != 0
     }
 
-    /// Returns whether terminal supports alternate key codes.
+    /// SupportsAlternateKeys returns whether the terminal supports reporting
+    /// alternate key codes.
     pub fn supports_alternate_keys(&self) -> bool {
         (self.flags & KITTY_REPORT_ALTERNATE_KEYS) != 0
     }
 
-    /// Returns whether terminal supports reporting all keys as escape codes.
+    /// SupportsAllKeysAsEscapeCodes returns whether the terminal supports
+    /// reporting all keys as escape codes.
     pub fn supports_all_keys_as_escape_codes(&self) -> bool {
         (self.flags & KITTY_REPORT_ALL_KEYS_AS_ESCAPE_CODES) != 0
     }
 
-    /// Returns whether terminal supports associated text.
+    /// SupportsAssociatedText returns whether the terminal supports reporting
+    /// associated text with key events.
     pub fn supports_associated_text(&self) -> bool {
         (self.flags & KITTY_REPORT_ASSOCIATED_KEYS) != 0
     }

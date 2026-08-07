@@ -11,7 +11,8 @@ use crate::model::{Cmd, Msg};
 use std::fmt;
 use std::time::{Duration, SystemTime};
 
-/// BatchMsg is sent when multiple commands are batched concurrently.
+/// BatchMsg is a message used to perform a bunch of commands concurrently with
+/// no ordering guarantees. You can send a BatchMsg with `batch`.
 pub struct BatchMsg(pub Vec<Cmd>);
 
 impl fmt::Debug for BatchMsg {
@@ -20,7 +21,7 @@ impl fmt::Debug for BatchMsg {
     }
 }
 
-/// SequenceMsg is used internally to run commands sequentially in order.
+/// SequenceMsg is used internally to run the given commands in order.
 pub struct SequenceMsg(pub Vec<Cmd>);
 
 impl fmt::Debug for SequenceMsg {
@@ -38,7 +39,8 @@ pub fn quit() -> Cmd {
     Some(Box::new(|| Some(Box::new(QuitMsg))))
 }
 
-/// Batch performs multiple commands concurrently with no ordering guarantees.
+/// Batch performs a bunch of commands concurrently with no ordering guarantees
+/// about the results. Use `batch` to return several commands.
 pub fn batch(cmds: Vec<Cmd>) -> Cmd {
     let mut valid_cmds = Vec::new();
     for cmd in cmds {
@@ -53,7 +55,8 @@ pub fn batch(cmds: Vec<Cmd>) -> Cmd {
     }
 }
 
-/// Sequence runs the given commands one at a time, in order.
+/// Sequence runs the given commands one at a time, in order. Contrast this with
+/// `batch`, which runs commands concurrently.
 pub fn sequence(cmds: Vec<Cmd>) -> Cmd {
     let mut valid_cmds = Vec::new();
     for cmd in cmds {
@@ -68,7 +71,21 @@ pub fn sequence(cmds: Vec<Cmd>) -> Cmd {
     }
 }
 
-/// Every is a command that ticks in sync with the system clock.
+/// Every is a command that ticks in sync with the system clock. So, if you
+/// wanted to tick with the system clock every second, minute or hour you
+/// could use this. It's also handy for having different things tick in sync.
+///
+/// Because we're ticking with the system clock the tick will likely not run for
+/// the entire specified duration. For example, if we're ticking for one minute
+/// and the clock is at 12:34:20 then the next tick will happen at 12:35:00, 40
+/// seconds later.
+///
+/// To produce the command, pass a duration and a function which returns
+/// a message containing the time at which the tick occurred.
+///
+/// **Beginners' note**: `every` sends a single message and won't automatically
+/// dispatch messages at an interval. To do that, you'll want to return another
+/// `every` command after receiving your tick message.
 pub fn every<F>(duration: Duration, fn_msg: F) -> Cmd
 where
     F: FnOnce(SystemTime) -> Option<Box<dyn Msg>> + Send + Sync + 'static,
@@ -90,7 +107,16 @@ where
     }))
 }
 
-/// Tick produces a command at an interval independent of system clock.
+/// Tick produces a command at an interval independent of the system clock at
+/// the given duration. That is, the timer begins precisely when invoked,
+/// and runs for its entire duration.
+///
+/// To produce the command, pass a duration and a function which returns
+/// a message containing the time at which the tick occurred.
+///
+/// **Beginners' note**: `tick` sends a single message and won't automatically
+/// dispatch messages at an interval. To do that, you'll want to return another
+/// `tick` command after receiving your tick message.
 pub fn tick<F>(duration: Duration, fn_msg: F) -> Cmd
 where
     F: FnOnce(SystemTime) -> Option<Box<dyn Msg>> + Send + Sync + 'static,
@@ -105,7 +131,11 @@ where
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RequestWindowSizeMsg;
 
-/// RequestWindowSize produces a command that queries terminal size.
+/// RequestWindowSize is a command that queries the terminal for its current
+/// size. It delivers the results to `update` via a `WindowSizeMsg`. Keep in
+/// mind that `WindowSizeMsg`s will automatically be delivered to `update` when
+/// the Program starts and when the window dimensions change, so in many cases
+/// you will not need to explicitly invoke this command.
 pub fn request_window_size() -> Cmd {
     Some(Box::new(|| Some(Box::new(RequestWindowSizeMsg))))
 }

@@ -9,7 +9,8 @@
 
 use std::fmt;
 
-/// PasteMsg is emitted when receiving bracketed paste text.
+/// PasteMsg is a message that is emitted when a terminal receives pasted text
+/// using bracketed-paste.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PasteMsg {
     /// Pasted string content.
@@ -22,10 +23,12 @@ impl fmt::Display for PasteMsg {
     }
 }
 
-/// PasteStartMsg is emitted when bracketed paste starts.
+/// PasteStartMsg is a message that is emitted when the terminal starts the
+/// bracketed-paste text.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PasteStartMsg;
 
-/// PasteEndMsg is emitted when bracketed paste ends.
+/// PasteEndMsg is a message that is emitted when the terminal ends the
+/// bracketed-paste text.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PasteEndMsg;

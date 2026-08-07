@@ -37,6 +37,7 @@ pub struct Program<M: Model> {
     pub renderer: Box<dyn Renderer>,
     /// Optional event filter.
     pub filter: Option<FilterFn<M>>,
+    enable_mouse: bool,
 }
 
 impl<M: Model> Program<M> {
@@ -48,6 +49,7 @@ impl<M: Model> Program<M> {
             model,
             renderer: Box::new(StandardRenderer::new(60)),
             filter: None,
+            enable_mouse: false,
         }
     }
 
@@ -57,7 +59,14 @@ impl<M: Model> Program<M> {
             model,
             renderer,
             filter: None,
+            enable_mouse: false,
         }
+    }
+
+    /// Enable mouse tracking for mouse-aware applications.
+    pub fn with_mouse(mut self) -> Self {
+        self.enable_mouse = true;
+        self
     }
 
     /// Helper to process a message, execute terminal commands, and dispatch generated commands.
@@ -115,7 +124,9 @@ impl<M: Model> Program<M> {
     pub fn run(mut self) -> Result<M, Box<dyn std::error::Error>> {
         let _ = enable_raw_mode();
         self.renderer.start();
-        self.renderer.enable_mouse_all_motion();
+        if self.enable_mouse {
+            self.renderer.enable_mouse_all_motion();
+        }
 
         let (tx, rx): (Sender<Box<dyn Msg>>, Receiver<Box<dyn Msg>>) = channel();
 
@@ -236,7 +247,9 @@ impl<M: Model> Program<M> {
             }
         }
 
-        self.renderer.disable_mouse_all_motion();
+        if self.enable_mouse {
+            self.renderer.disable_mouse_all_motion();
+        }
         self.renderer.stop();
         let _ = disable_raw_mode();
         Ok(self.model)

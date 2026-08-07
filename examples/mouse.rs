@@ -38,7 +38,8 @@ impl Model for MouseModel {
 fn main() {
     let p = Program::new(MouseModel {
         last_event: String::new(),
-    });
+    })
+    .with_mouse();
     if let Err(err) = p.run() {
         eprintln!("Error running program: {}", err);
         std::process::exit(1);

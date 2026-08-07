@@ -7,7 +7,7 @@
 //! Screen buffer command constructors and screen state messages (`ClearScreen`, `HideCursor`, `ShowCursor`, `EnableMouseCellMotion`, `EnableMouseAllMotion`, `DisableMouse`, `EnableBracketedPaste`, `DisableBracketedPaste`, `EnableReportFocus`, `DisableReportFocus`, `PrintlnMsg`, `print_ln`, `print_f`).
 //! </public-docs>
 
-use crate::model::{Cmd, Msg};
+use crate::model::Cmd;
 use std::fmt;
 
 /// ClearScreenMsg tells the program to clear the screen buffer.

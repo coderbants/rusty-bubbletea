@@ -9,6 +9,7 @@ Target Upstream Tag: `charmbracelet/bubbletea@v1.3.4`
 | `tea_test.go` | `tests/tea_test.rs` | Ported & Tested | Core program unit tests |
 | `commands.go` | `src/commands.rs` | Ported & Tested | Built-in commands (`quit`, `batch`, `sequence`, `tick`, `every`, `set_window_title`, `window_size`, `enter_alt_screen`, `exit_alt_screen`) |
 | `commands_test.go` | `tests/commands_test.rs` | Ported & Tested | Command suite integration tests |
+| `clipboard.go` | `src/clipboard.rs` | Ported & Tested | Dedicated module for OSC52 system/primary clipboard operations (`set_clipboard`, `read_clipboard`, `ClipboardMsg`) |
 | `key.go` | `src/key.rs` | Ported & Tested | Key types, KeyMsg, rune decoding |
 | `key_sequences.go` | `src/key_sequences.rs` | Ported & Tested | Dedicated module for ANSI escape sequence detection & bracketed paste |
 | `key_other.go` | `src/key_other.rs` | Ported & Tested | Dedicated module for POSIX non-windows key handling |

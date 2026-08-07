@@ -9,6 +9,7 @@
 
 #![deny(missing_docs)]
 
+pub mod clipboard;
 pub mod commands;
 pub mod exec;
 pub mod focus;
@@ -34,6 +35,7 @@ pub mod tty;
 pub mod tty_unix;
 pub mod tty_windows;
 
+pub use clipboard::*;
 pub use commands::*;
 pub use exec::*;
 pub use focus::*;

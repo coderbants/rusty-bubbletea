@@ -1,4 +1,4 @@
-//! Cleanroom Rust port of upstream Go source file: `program.go`, `standard_renderer.go`, `tty_unix.go`
+//! Cleanroom Rust port of upstream Go source file: `program.go`
 //! Upstream Target Tag / Version: `v1.3.4`
 //!
 //! <public-docs>
@@ -14,17 +14,13 @@ use crate::commands::{
 use crate::key::{KeyMsg, KeyType};
 use crate::model::{Model, Msg};
 use crate::mouse::{MouseAction, MouseButton, MouseMsg};
+use crate::renderer::Renderer;
+use crate::standard_renderer::StandardRenderer;
 
 use crossterm::{
-    cursor::{MoveToPreviousLine, Show},
     event::{self, Event as CrossEvent, KeyCode, KeyModifiers, MouseEventKind},
-    execute,
-    terminal::{
-        disable_raw_mode, enable_raw_mode, size as term_size, Clear, ClearType,
-        EnterAlternateScreen, LeaveAlternateScreen, SetTitle,
-    },
+    terminal::{disable_raw_mode, enable_raw_mode, size as term_size},
 };
-use std::io::{stdout, Write};
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread;
 use std::time::Duration;
@@ -34,7 +30,7 @@ use std::time::Duration;
 /// </upstream-comment>
 pub struct Program<M: Model> {
     model: M,
-    lines_rendered: usize,
+    renderer: Box<dyn Renderer>,
 }
 
 impl<M: Model> Program<M> {
@@ -44,29 +40,13 @@ impl<M: Model> Program<M> {
     pub fn new(model: M) -> Self {
         Self {
             model,
-            lines_rendered: 0,
+            renderer: Box::new(StandardRenderer::new(60)),
         }
     }
 
-    /// Renders the model's view, re-positioning the cursor and clearing previous lines inline (matching standard_renderer.go).
-    fn render_view(&mut self) {
-        let view = self.model.view();
-
-        if self.lines_rendered > 1 {
-            let _ = execute!(stdout(), MoveToPreviousLine((self.lines_rendered - 1) as u16));
-        } else if self.lines_rendered == 1 {
-            print!("\r");
-        }
-
-        let _ = execute!(stdout(), Clear(ClearType::FromCursorDown));
-
-        if !view.is_empty() {
-            print!("{}", view);
-            let _ = stdout().flush();
-            self.lines_rendered = view.lines().count().max(1);
-        } else {
-            self.lines_rendered = 0;
-        }
+    /// Custom constructor accepting a custom renderer implementation.
+    pub fn with_renderer(model: M, renderer: Box<dyn Renderer>) -> Self {
+        Self { model, renderer }
     }
 
     /// Helper to process a message, execute terminal commands, and dispatch generated commands.
@@ -76,13 +56,11 @@ impl<M: Model> Program<M> {
         }
 
         if msg.as_ref().as_any().is::<EnterAltScreenMsg>() {
-            let _ = execute!(stdout(), EnterAlternateScreen);
-            self.lines_rendered = 0;
+            self.renderer.enter_alt_screen();
         } else if msg.as_ref().as_any().is::<ExitAltScreenMsg>() {
-            let _ = execute!(stdout(), LeaveAlternateScreen);
-            self.lines_rendered = 0;
+            self.renderer.exit_alt_screen();
         } else if let Some(title_msg) = msg.as_ref().as_any().downcast_ref::<SetWindowTitleMsg>() {
-            let _ = execute!(stdout(), SetTitle(&title_msg.0));
+            self.renderer.set_window_title(&title_msg.0);
         } else if msg.as_ref().as_any().is::<RequestWindowSizeMsg>() {
             if let Ok((w, h)) = term_size() {
                 let _ = tx.send(Box::new(WindowSizeMsg::new(w, h)));
@@ -98,7 +76,7 @@ impl<M: Model> Program<M> {
         }
 
         let cmd = self.model.update(msg);
-        self.render_view();
+        self.renderer.write(self.model.view());
 
         if let Some(c) = cmd {
             let tx_clone = tx.clone();
@@ -116,6 +94,9 @@ impl<M: Model> Program<M> {
     /// </upstream-comment>
     pub fn run(mut self) -> Result<M, Box<dyn std::error::Error>> {
         let _ = enable_raw_mode();
+        self.renderer.start();
+        self.renderer.enable_mouse_all_motion();
+
         let (tx, rx): (Sender<Box<dyn Msg>>, Receiver<Box<dyn Msg>>) = channel();
 
         // Spawn terminal input reader thread
@@ -210,9 +191,6 @@ impl<M: Model> Program<M> {
             }
         });
 
-        // Enable mouse capture in Crossterm
-        let _ = execute!(stdout(), crossterm::event::EnableMouseCapture);
-
         // Run initial command
         if let Some(cmd) = self.model.init() {
             let tx_clone = tx.clone();
@@ -229,7 +207,7 @@ impl<M: Model> Program<M> {
         }
 
         // Initial view render
-        self.render_view();
+        self.renderer.write(self.model.view());
 
         // Event loop processing
         while let Ok(msg) = rx.recv() {
@@ -238,9 +216,9 @@ impl<M: Model> Program<M> {
             }
         }
 
-        let _ = execute!(stdout(), crossterm::event::DisableMouseCapture);
+        self.renderer.disable_mouse_all_motion();
+        self.renderer.stop();
         let _ = disable_raw_mode();
-        let _ = execute!(stdout(), Show, LeaveAlternateScreen);
         Ok(self.model)
     }
 }

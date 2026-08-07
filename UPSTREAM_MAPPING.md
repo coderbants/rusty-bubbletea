@@ -20,11 +20,11 @@ Target Upstream Tag: `charmbracelet/bubbletea@v1.3.4`
 | `exec_test.go` | `tests/commands_test.rs` | Exec process tests |
 | `options.go` | `src/program.rs` | Program startup options |
 | `options_test.go` | `tests/commands_test.rs` | Program option tests |
-| `renderer.go` | `src/program.rs` | Renderer interface definition |
-| `standard_renderer.go` | `src/program.rs` | Standard ANSI terminal renderer |
-| `nil_renderer.go` | `src/program.rs` | No-op testing renderer |
+| `renderer.go` | `src/renderer.rs` | Renderer interface definition |
+| `standard_renderer.go` | `src/standard_renderer.rs` | Standard terminal renderer implementation |
+| `nil_renderer.go` | `src/nil_renderer.rs` | No-op testing renderer implementation |
 | `nil_renderer_test.go` | `tests/tea_test.rs` | Nil renderer test |
-| `screen.go` | `src/program.rs` | Alternate screen buffer controls |
+| `screen.go` | `src/standard_renderer.rs` | Alternate screen buffer controls |
 | `screen_test.go` | `tests/commands_test.rs` | Screen buffer tests |
 | `logging.go` | `src/program.rs` | File logger utility |
 | `logging_test.go` | `tests/tea_test.rs` | Logging unit test |

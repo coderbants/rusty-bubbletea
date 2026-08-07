@@ -13,10 +13,16 @@ pub mod commands;
 pub mod key;
 pub mod model;
 pub mod mouse;
+pub mod nil_renderer;
 pub mod program;
+pub mod renderer;
+pub mod standard_renderer;
 
 pub use commands::*;
 pub use key::*;
 pub use model::*;
 pub use mouse::*;
+pub use nil_renderer::*;
 pub use program::*;
+pub use renderer::*;
+pub use standard_renderer::*;

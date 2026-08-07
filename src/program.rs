@@ -20,7 +20,7 @@ use crate::key::{Key, KeyMod, KeyPressMsg, KEY_BACKSPACE, KEY_DOWN, KEY_END, KEY
 use crate::model::{Model, Msg};
 use crate::mouse::{Mouse, MouseButton, MouseClickMsg, MouseReleaseMsg, MouseWheelMsg};
 use crate::options::ProgramOptions;
-use crate::renderer::Renderer;
+use crate::renderer::{PrintLineMsg, Renderer};
 use crate::screen::{ClearScreenMsg, WindowSizeMsg};
 use crossterm::{
     event::{self, Event as CrossEvent, KeyCode, KeyModifiers, MouseEventKind},
@@ -78,7 +78,10 @@ impl<M: Model> Program<M> {
                     height: h as usize,
                 }));
             }
+            // RequestWindowSizeMsg itself is internal — don't pass to model.update
+            return false;
         } else if let Some(ws) = processed_msg.as_ref().as_any().downcast_ref::<WindowSizeMsg>() {
+            // Resize the renderer first, then fall through to model.update below
             self.renderer.resize(ws.width, ws.height);
         } else if let Some(exec_msg) = processed_msg.as_ref().as_any().downcast_ref::<ExecMsg>() {
             let _ = disable_raw_mode();
@@ -86,6 +89,13 @@ impl<M: Model> Program<M> {
             cmd.args(&exec_msg.args);
             let _ = cmd.status();
             let _ = enable_raw_mode();
+        } else if let Some(print_msg) = processed_msg.as_ref().as_any().downcast_ref::<PrintLineMsg>() {
+            // Insert the line above the TUI without routing through model.update
+            let _ = self.renderer.insert_above(print_msg.message_body.clone());
+            // Re-render to flush queued lines
+            let view = self.model.view();
+            self.renderer.render(view);
+            return false;
         }
 
         if let Some(_batch) = processed_msg.as_ref().as_any().downcast_ref::<BatchMsg>() {

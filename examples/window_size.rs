@@ -2,11 +2,10 @@ use charming_bubbletea::{
     print_f, quit, request_window_size, Cmd, KeyPressMsg, Model, Msg, Program, View, WindowSizeMsg,
 };
 
+// A simple program that queries and displays the window-size.
+
 #[derive(Default)]
-struct ModelImpl {
-    width: usize,
-    height: usize,
-}
+struct ModelImpl {}
 
 impl Model for ModelImpl {
     fn init(&self) -> Cmd {
@@ -14,23 +13,23 @@ impl Model for ModelImpl {
     }
 
     fn update(&mut self, msg: Box<dyn Msg>) -> Cmd {
-        if let Some(ws) = msg.as_any().downcast_ref::<WindowSizeMsg>() {
-            self.width = ws.width;
-            self.height = ws.height;
-            print_f(format_args!("{}x{}", self.width, self.height))
-        } else if let Some(k) = msg.as_any().downcast_ref::<KeyPressMsg>() {
-            if k.0.to_string() == "q" || k.0.to_string() == "ctrl+c" {
-                quit()
-            } else {
-                request_window_size()
+        if let Some(k) = msg.as_any().downcast_ref::<KeyPressMsg>() {
+            let s = k.0.to_string();
+            if s == "ctrl+c" || s == "q" || s == "esc" {
+                return quit();
             }
-        } else {
-            None
+            return request_window_size();
         }
+
+        if let Some(ws) = msg.as_any().downcast_ref::<WindowSizeMsg>() {
+            return print_f(format_args!("The window size is: {}x{}", ws.width, ws.height));
+        }
+
+        None
     }
 
     fn view(&self) -> View {
-        View::new("When you're done press q to quit. Press any other key to query the window-size.\n")
+        View::new("\nWhen you're done press q to quit.\nPress any other key to query the window-size.\n")
     }
 }
 

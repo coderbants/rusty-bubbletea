@@ -114,7 +114,10 @@ impl Renderer for CursedRenderer {
         if !view.content.is_empty() {
             print!("{}", view.content);
             let _ = stdout().flush();
-            self.lines_rendered = view.content.lines().count().max(1);
+            // Count the number of lines by counting newline characters.
+            // A trailing \n means the cursor is on the next (blank) line,
+            // which is what the Go implementation tracks.
+            self.lines_rendered = view.content.chars().filter(|&c| c == '\n').count() + 1;
         } else {
             self.lines_rendered = 0;
         }

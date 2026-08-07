@@ -16,12 +16,12 @@ use crate::model::{Model, Msg};
 use crate::mouse::{MouseAction, MouseButton, MouseMsg};
 
 use crossterm::{
-    cursor::Show,
+    cursor::{MoveToPreviousLine, Show},
     event::{self, Event as CrossEvent, KeyCode, KeyModifiers, MouseEventKind},
     execute,
     terminal::{
-        disable_raw_mode, enable_raw_mode, size as term_size, EnterAlternateScreen,
-        LeaveAlternateScreen, SetTitle,
+        disable_raw_mode, enable_raw_mode, size as term_size, Clear, ClearType,
+        EnterAlternateScreen, LeaveAlternateScreen, SetTitle,
     },
 };
 use std::io::{stdout, Write};
@@ -34,6 +34,7 @@ use std::time::Duration;
 /// </upstream-comment>
 pub struct Program<M: Model> {
     model: M,
+    lines_rendered: usize,
 }
 
 impl<M: Model> Program<M> {
@@ -41,7 +42,31 @@ impl<M: Model> Program<M> {
     /// NewProgram creates a new Program instance for the given Model.
     /// </upstream-comment>
     pub fn new(model: M) -> Self {
-        Self { model }
+        Self {
+            model,
+            lines_rendered: 0,
+        }
+    }
+
+    /// Renders the model's view, re-positioning the cursor and clearing previous lines inline (matching standard_renderer.go).
+    fn render_view(&mut self) {
+        let view = self.model.view();
+
+        if self.lines_rendered > 1 {
+            let _ = execute!(stdout(), MoveToPreviousLine((self.lines_rendered - 1) as u16));
+        } else if self.lines_rendered == 1 {
+            print!("\r");
+        }
+
+        let _ = execute!(stdout(), Clear(ClearType::FromCursorDown));
+
+        if !view.is_empty() {
+            print!("{}", view);
+            let _ = stdout().flush();
+            self.lines_rendered = view.lines().count().max(1);
+        } else {
+            self.lines_rendered = 0;
+        }
     }
 
     /// Helper to process a message, execute terminal commands, and dispatch generated commands.
@@ -52,8 +77,10 @@ impl<M: Model> Program<M> {
 
         if msg.as_ref().as_any().is::<EnterAltScreenMsg>() {
             let _ = execute!(stdout(), EnterAlternateScreen);
+            self.lines_rendered = 0;
         } else if msg.as_ref().as_any().is::<ExitAltScreenMsg>() {
             let _ = execute!(stdout(), LeaveAlternateScreen);
+            self.lines_rendered = 0;
         } else if let Some(title_msg) = msg.as_ref().as_any().downcast_ref::<SetWindowTitleMsg>() {
             let _ = execute!(stdout(), SetTitle(&title_msg.0));
         } else if msg.as_ref().as_any().is::<RequestWindowSizeMsg>() {
@@ -71,11 +98,7 @@ impl<M: Model> Program<M> {
         }
 
         let cmd = self.model.update(msg);
-        let view = self.model.view();
-        if !view.is_empty() {
-            print!("{}", view);
-            let _ = stdout().flush();
-        }
+        self.render_view();
 
         if let Some(c) = cmd {
             let tx_clone = tx.clone();
@@ -206,11 +229,7 @@ impl<M: Model> Program<M> {
         }
 
         // Initial view render
-        let view = self.model.view();
-        if !view.is_empty() {
-            print!("{}", view);
-            let _ = stdout().flush();
-        }
+        self.render_view();
 
         // Event loop processing
         while let Ok(msg) = rx.recv() {

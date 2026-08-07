@@ -9,5 +9,5 @@ fn test_mouse_msg() {
     assert_eq!(mouse.action, MouseAction::MouseActionPress);
 
     let display_str = format!("{}", mouse);
-    assert!(display_str.contains("10,20"));
+    assert!(display_str.contains("10, 20"));
 }

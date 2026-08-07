@@ -1,3 +1,6 @@
+//! Cleanroom Rust port of upstream Go source file: `program.go`
+//! Upstream Target Tag / Version: `v1.3.4`
+//!
 //! <public-docs>
 //! # Program
 //!

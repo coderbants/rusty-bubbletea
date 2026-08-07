@@ -1,3 +1,6 @@
+//! Cleanroom Rust port of upstream Go source file: `tea.go` / `model.go`
+//! Upstream Target Tag / Version: `v1.3.4`
+//!
 //! <public-docs>
 //! # Model
 //!

@@ -1,3 +1,6 @@
+//! Cleanroom Rust port of upstream Go source file: `mouse.go`
+//! Upstream Target Tag / Version: `v1.3.4`
+//!
 //! <public-docs>
 //! # Mouse
 //!
@@ -100,7 +103,7 @@ impl fmt::Display for MouseMsg {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "({},{}: {:?} {:?})",
+            "({}, {}: {:?} {:?})",
             self.x, self.y, self.button, self.action
         )
     }

@@ -23,7 +23,7 @@ Target Upstream Tag: `charmbracelet/bubbletea@v1.3.4`
 | `standard_renderer.go` | `src/standard_renderer.rs` | Ported & Tested | Framerate-based terminal renderer & repainter |
 | `nil_renderer.go` | `src/nil_renderer.rs` | Ported & Tested | No-op testing renderer implementation |
 | `nil_renderer_test.go` | `tests/tea_test.rs` | Ported & Tested | Nil renderer unit test |
-| `screen.go` | `src/standard_renderer.rs` | Ported & Tested | Alternate screen buffer controls |
+| `screen.go` | `src/screen.rs` | Ported & Tested | Dedicated module for alternate screen buffer and mouse mode control commands |
 | `screen_test.go` | `tests/commands_test.rs` | Ported & Tested | Screen buffer tests |
 | `logging.go` | `src/logging.rs` | Ported & Tested | File logger utility (`log_to_file`, `FileLogger`) |
 | `logging_test.go` | `tests/tea_test.rs` | Ported & Tested | Logging unit test |

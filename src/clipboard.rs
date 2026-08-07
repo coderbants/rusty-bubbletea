@@ -7,7 +7,7 @@
 //! OSC52 terminal clipboard read/write command constructors (`SetClipboard`, `ReadClipboard`, `SetPrimaryClipboard`, `ReadPrimaryClipboard`) and `ClipboardMsg`.
 //! </public-docs>
 
-use crate::model::{Cmd, Msg};
+use crate::model::Cmd;
 use std::fmt;
 
 /// <upstream-comment>

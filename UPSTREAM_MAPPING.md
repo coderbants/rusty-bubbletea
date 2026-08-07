@@ -10,7 +10,7 @@ Target Upstream Tag: `charmbracelet/bubbletea@v1.3.4`
 | `commands.go` | `src/commands.rs` | Ported & Tested | Built-in commands (`quit`, `batch`, `sequence`, `tick`, `set_window_title`, `window_size`, `enter_alt_screen`, `exit_alt_screen`) |
 | `commands_test.go` | `tests/commands_test.rs` | Ported & Tested | Command suite integration tests |
 | `key.go` | `src/key.rs` | Ported & Tested | Key types, KeyMsg, rune decoding |
-| `key_sequences.go` | `src/key.rs` | Ported & Tested | ANSI escape sequence key mapping |
+| `key_sequences.go` | `src/key_sequences.rs` | Ported & Tested | Dedicated module for ANSI escape sequence detection & bracketed paste |
 | `key_other.go` | `src/key.rs` | Ported & Tested | POSIX non-windows key handling |
 | `key_windows.go` | `src/key.rs` | Ported & Tested | Windows console input API mapping |
 | `key_test.go` | `tests/key_test.rs` | Ported & Tested | Keyboard event suite tests |

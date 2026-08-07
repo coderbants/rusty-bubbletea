@@ -25,12 +25,18 @@ use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread;
 use std::time::Duration;
 
+/// Event filter function closure type.
+pub type FilterFn<M> = Box<dyn Fn(&M, Box<dyn Msg>) -> Option<Box<dyn Msg>> + Send + Sync>;
+
 /// <upstream-comment>
 /// Program is the runner for a Bubble Tea application.
 /// </upstream-comment>
 pub struct Program<M: Model> {
     model: M,
-    renderer: Box<dyn Renderer>,
+    /// Renderer instance.
+    pub renderer: Box<dyn Renderer>,
+    /// Optional event filter.
+    pub filter: Option<FilterFn<M>>,
 }
 
 impl<M: Model> Program<M> {
@@ -41,41 +47,55 @@ impl<M: Model> Program<M> {
         Self {
             model,
             renderer: Box::new(StandardRenderer::new(60)),
+            filter: None,
         }
     }
 
     /// Custom constructor accepting a custom renderer implementation.
     pub fn with_renderer(model: M, renderer: Box<dyn Renderer>) -> Self {
-        Self { model, renderer }
+        Self {
+            model,
+            renderer,
+            filter: None,
+        }
     }
 
     /// Helper to process a message, execute terminal commands, and dispatch generated commands.
     fn handle_msg(&mut self, msg: Box<dyn Msg>, tx: &Sender<Box<dyn Msg>>) -> bool {
-        if msg.as_ref().as_any().is::<QuitMsg>() {
+        let processed_msg = if let Some(ref filter) = self.filter {
+            match filter(&self.model, msg) {
+                Some(m) => m,
+                None => return false,
+            }
+        } else {
+            msg
+        };
+
+        if processed_msg.as_ref().as_any().is::<QuitMsg>() {
             return true;
         }
 
-        if msg.as_ref().as_any().is::<EnterAltScreenMsg>() {
+        if processed_msg.as_ref().as_any().is::<EnterAltScreenMsg>() {
             self.renderer.enter_alt_screen();
-        } else if msg.as_ref().as_any().is::<ExitAltScreenMsg>() {
+        } else if processed_msg.as_ref().as_any().is::<ExitAltScreenMsg>() {
             self.renderer.exit_alt_screen();
-        } else if let Some(title_msg) = msg.as_ref().as_any().downcast_ref::<SetWindowTitleMsg>() {
+        } else if let Some(title_msg) = processed_msg.as_ref().as_any().downcast_ref::<SetWindowTitleMsg>() {
             self.renderer.set_window_title(&title_msg.0);
-        } else if msg.as_ref().as_any().is::<RequestWindowSizeMsg>() {
+        } else if processed_msg.as_ref().as_any().is::<RequestWindowSizeMsg>() {
             if let Ok((w, h)) = term_size() {
                 let _ = tx.send(Box::new(WindowSizeMsg::new(w, h)));
             }
         }
 
-        if let Some(_batch_msg) = msg.as_ref().as_any().downcast_ref::<BatchMsg>() {
+        if let Some(_batch_msg) = processed_msg.as_ref().as_any().downcast_ref::<BatchMsg>() {
             return false;
         }
 
-        if let Some(_seq_msg) = msg.as_ref().as_any().downcast_ref::<SequenceMsg>() {
+        if let Some(_seq_msg) = processed_msg.as_ref().as_any().downcast_ref::<SequenceMsg>() {
             return false;
         }
 
-        let cmd = self.model.update(msg);
+        let cmd = self.model.update(processed_msg);
         self.renderer.write(self.model.view());
 
         if let Some(c) = cmd {

@@ -8,7 +8,8 @@
 //! </public-docs>
 
 use crate::commands::{
-    BatchMsg, EnterAltScreenMsg, ExitAltScreenMsg, QuitMsg, WindowSizeMsg,
+    BatchMsg, EnterAltScreenMsg, ExitAltScreenMsg, QuitMsg, RequestWindowSizeMsg, SequenceMsg,
+    SetWindowTitleMsg, WindowSizeMsg,
 };
 use crate::key::{KeyMsg, KeyType};
 use crate::model::{Model, Msg};
@@ -20,7 +21,7 @@ use crossterm::{
     execute,
     terminal::{
         disable_raw_mode, enable_raw_mode, size as term_size, EnterAlternateScreen,
-        LeaveAlternateScreen,
+        LeaveAlternateScreen, SetTitle,
     },
 };
 use std::io::{stdout, Write};
@@ -53,10 +54,20 @@ impl<M: Model> Program<M> {
             let _ = execute!(stdout(), EnterAlternateScreen);
         } else if msg.as_ref().as_any().is::<ExitAltScreenMsg>() {
             let _ = execute!(stdout(), LeaveAlternateScreen);
+        } else if let Some(title_msg) = msg.as_ref().as_any().downcast_ref::<SetWindowTitleMsg>() {
+            let _ = execute!(stdout(), SetTitle(&title_msg.0));
+        } else if msg.as_ref().as_any().is::<RequestWindowSizeMsg>() {
+            if let Ok((w, h)) = term_size() {
+                let _ = tx.send(Box::new(WindowSizeMsg::new(w, h)));
+            }
         }
 
         if let Some(_batch_msg) = msg.as_ref().as_any().downcast_ref::<BatchMsg>() {
-            // Process nested batch commands
+            return false;
+        }
+
+        if let Some(_seq_msg) = msg.as_ref().as_any().downcast_ref::<SequenceMsg>() {
+            return false;
         }
 
         let cmd = self.model.update(msg);

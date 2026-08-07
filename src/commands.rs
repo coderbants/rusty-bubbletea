@@ -9,6 +9,7 @@
 
 use crate::model::Cmd;
 use std::fmt;
+use std::time::{Duration, SystemTime};
 
 /// <upstream-comment>
 /// BatchMsg is sent when multiple commands are batched.
@@ -18,6 +19,17 @@ pub struct BatchMsg(pub Vec<Cmd>);
 impl fmt::Debug for BatchMsg {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "BatchMsg({} commands)", self.0.len())
+    }
+}
+
+/// <upstream-comment>
+/// SequenceMsg runs commands sequentially.
+/// </upstream-comment>
+pub struct SequenceMsg(pub Vec<Cmd>);
+
+impl fmt::Debug for SequenceMsg {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "SequenceMsg({} commands)", self.0.len())
     }
 }
 
@@ -38,7 +50,12 @@ pub fn quit() -> Cmd {
 /// Batch combines multiple commands into a single command.
 /// </upstream-comment>
 pub fn batch(cmds: Vec<Cmd>) -> Cmd {
-    let valid_cmds: Vec<_> = cmds.into_iter().collect();
+    let mut valid_cmds = Vec::new();
+    for cmd in cmds {
+        if cmd.is_some() {
+            valid_cmds.push(cmd);
+        }
+    }
     if valid_cmds.is_empty() {
         return None;
     }
@@ -46,10 +63,32 @@ pub fn batch(cmds: Vec<Cmd>) -> Cmd {
 }
 
 /// <upstream-comment>
-/// Sequence runs commands sequentially one after another.
+/// Sequence runs the given commands one at a time, in order.
 /// </upstream-comment>
 pub fn sequence(cmds: Vec<Cmd>) -> Cmd {
-    batch(cmds)
+    let mut valid_cmds = Vec::new();
+    for cmd in cmds {
+        if cmd.is_some() {
+            valid_cmds.push(cmd);
+        }
+    }
+    if valid_cmds.is_empty() {
+        return None;
+    }
+    Some(Box::new(move || Some(Box::new(SequenceMsg(valid_cmds)))))
+}
+
+/// <upstream-comment>
+/// Tick produces a command at an interval independent of system clock.
+/// </upstream-comment>
+pub fn tick<F>(duration: Duration, fn_msg: F) -> Cmd
+where
+    F: FnOnce(SystemTime) -> Option<Box<dyn crate::model::Msg>> + Send + Sync + 'static,
+{
+    Some(Box::new(move || {
+        std::thread::sleep(duration);
+        fn_msg(SystemTime::now())
+    }))
 }
 
 /// <upstream-comment>
@@ -76,6 +115,33 @@ pub struct ExitAltScreenMsg;
 /// </upstream-comment>
 pub fn exit_alt_screen() -> Cmd {
     Some(Box::new(|| Some(Box::new(ExitAltScreenMsg))))
+}
+
+/// <upstream-comment>
+/// SetWindowTitleMsg sets terminal window title.
+/// </upstream-comment>
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SetWindowTitleMsg(pub String);
+
+/// <upstream-comment>
+/// SetWindowTitle produces a command that sets the terminal title.
+/// </upstream-comment>
+pub fn set_window_title(title: &str) -> Cmd {
+    let t = title.to_string();
+    Some(Box::new(move || Some(Box::new(SetWindowTitleMsg(t)))))
+}
+
+/// <upstream-comment>
+/// RequestWindowSizeMsg signals a request to query window dimensions.
+/// </upstream-comment>
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RequestWindowSizeMsg;
+
+/// <upstream-comment>
+/// WindowSize produces a command to query current terminal window size.
+/// </upstream-comment>
+pub fn window_size() -> Cmd {
+    Some(Box::new(|| Some(Box::new(RequestWindowSizeMsg))))
 }
 
 /// <upstream-comment>

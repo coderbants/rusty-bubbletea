@@ -7,7 +7,8 @@ license = "MIT"
 
 [dependencies]
 charming-lipgloss = { version = "2.0.5", path = "../charming-lipgloss" }
-charming-x-ansi = { version = "0.11.2", path = "../charming-x-ansi" }
+charming-ultraviolet = { path = "../charming-ultraviolet" }
+charming-x-ansi = { version = "0.0.0-20260703014108", path = "../charming-x-ansi" }
 unicode-segmentation = "1.10.1"
 tokio = { version = "1.38", features = ["full"] }
 tokio-stream = "0.1"

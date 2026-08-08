@@ -13,7 +13,7 @@ upstream tag `v2.0.8`, checked out locally in `upstream-go/` (gitignored).
 | `tea.go` | `src/lib.rs`, `src/view.rs`, `src/program.rs` | Core Elm architecture: `Model`, `Msg`, `Cmd`, `Program`, `View` |
 | `tea_test.go` | `tests/tea_test.rs` | Core program unit tests |
 | `clipboard.go` | `src/clipboard.rs` | OSC52 clipboard ops (`set_clipboard`, `read_clipboard`, `ClipboardMsg`) |
-| `color.go` | `src/color.rs` | Color requests and messages (`request_background_color`, `BackgroundColorMsg`, …) |
+| `color.go` | `src/color.rs` — **Refactored** | Response messages wrap `charming-ultraviolet` color events; `is_dark` via the upstream HSL logic | Color requests and messages (`request_background_color`, `BackgroundColorMsg`, …) |
 | `commands.go` | `src/commands.rs` | Built-in commands (`quit`, `batch`, `sequence`, `tick`, `every`, `request_window_size`) |
 | `commands_test.go` | `tests/commands_test.rs` | Command suite tests |
 | `cursed_renderer.go` | `src/cursed_renderer.rs` | CursedRenderer: declarative view frames, ANSI diffing, unmanaged lines |

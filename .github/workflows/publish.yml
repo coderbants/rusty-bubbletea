@@ -31,6 +31,12 @@ jobs:
           repository: coderbants/charming-lipgloss
           path: siblings/charming-lipgloss
           ref: v2.0.5
+      - name: Fetch sibling charming-ultraviolet (pinned)
+        uses: actions/checkout@v4
+        with:
+          repository: coderbants/charming-ultraviolet
+          path: siblings/charming-ultraviolet
+          ref: dev
       - name: Fetch sibling charming-x-ansi (pinned)
         uses: actions/checkout@v4
         with:
@@ -40,6 +46,7 @@ jobs:
       - name: Place sibling crates
         run: |
           mv siblings/charming-lipgloss ../charming-lipgloss
+          mv siblings/charming-ultraviolet ../charming-ultraviolet
           mv siblings/charming-x-ansi ../charming-x-ansi
       - name: Test
         run: cargo test --all-targets

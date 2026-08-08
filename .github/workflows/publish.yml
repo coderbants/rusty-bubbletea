@@ -21,6 +21,10 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: 'stable'
+      - name: Fetch upstream Go source (pinned)
+        run: |
+          git clone --quiet https://github.com/charmbracelet/bubbletea.git upstream-go
+          cd upstream-go && git checkout --quiet v2.0.8
       - name: Test
         run: cargo test --all-targets
       - name: Verify example parity (upstream Go vs Rust)

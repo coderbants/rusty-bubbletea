@@ -6,7 +6,7 @@ struct DebounceModel {
 }
 
 #[derive(Debug, Clone)]
-struct TagMsg(u32);
+struct TagMsg(#[allow(dead_code)] u32);
 
 impl Model for DebounceModel {
     fn init(&self) -> Cmd {

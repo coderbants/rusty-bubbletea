@@ -23,6 +23,12 @@ impl EnvMsg {
         Self { vars }
     }
 
+    /// Creates an EnvMsg from the process environment.
+    pub fn from_std() -> Self {
+        let vars = std::env::vars().collect();
+        Self { vars }
+    }
+
     /// Returns value of environment variable or empty string if unset.
     pub fn getenv(&self, key: &str) -> String {
         self.vars.get(key).cloned().unwrap_or_default()

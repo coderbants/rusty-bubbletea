@@ -13,28 +13,69 @@
 //! Example programs can be found at https://github.com/charmbracelet/bubbletea/tree/master/examples
 //! </upstream-docs>
 
-use crate::commands::{BatchMsg, QuitMsg, RequestWindowSizeMsg, SequenceMsg};
+use std::fmt;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::mpsc::{channel, Receiver, Sender};
+use std::sync::Arc;
+use std::thread;
+use std::time::Duration;
+
+use crate::commands::{BatchMsg, InterruptMsg, QuitMsg, RequestWindowSizeMsg, ResumeMsg, SequenceMsg, SuspendMsg};
 use crate::cursed_renderer::CursedRenderer;
+use crate::environ::EnvMsg;
 use crate::exec::ExecMsg;
 use crate::key::{Key, KeyMod, KeyPressMsg, KEY_BACKSPACE, KEY_DOWN, KEY_END, KEY_ENTER, KEY_ESCAPE, KEY_HOME, KEY_LEFT, KEY_PG_DOWN, KEY_PG_UP, KEY_RIGHT, KEY_TAB, KEY_UP};
 use crate::model::{Model, Msg};
 use crate::mouse::{Mouse, MouseButton, MouseClickMsg, MouseReleaseMsg, MouseWheelMsg};
 use crate::options::ProgramOptions;
+use crate::profile::ColorProfileMsg;
 use crate::renderer::{PrintLineMsg, Renderer};
 use crate::screen::{ClearScreenMsg, WindowSizeMsg};
 use crossterm::{
     event::{self, Event as CrossEvent, KeyCode, KeyModifiers, MouseEventKind},
     terminal::{disable_raw_mode, enable_raw_mode, size as term_size},
 };
-use std::sync::mpsc::{channel, Receiver, Sender};
-use std::thread;
-use std::time::Duration;
+
+/// <upstream-comment>ErrProgramPanic is returned by [Program.Run] when the program recovers from a panic.</upstream-comment>
+pub const ERR_PROGRAM_PANIC: &str = "program experienced a panic";
+
+/// <upstream-comment>ErrProgramKilled is returned by [Program.Run] when the program gets killed.</upstream-comment>
+pub const ERR_PROGRAM_KILLED: &str = "program was killed";
+
+/// <upstream-comment>ErrInterrupted is returned by [Program.Run] when the program get a SIGINT
+/// signal, or when it receives a [InterruptMsg].</upstream-comment>
+pub const ERR_INTERRUPTED: &str = "program was interrupted";
+
+/// ProgramError is the error type returned by [Program::run].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ProgramError {
+    /// The program was killed (context cancellation or external kill).
+    Killed,
+    /// The program was interrupted (SIGINT or [InterruptMsg]).
+    Interrupted,
+    /// The program recovered from a panic.
+    Panic,
+}
+
+impl fmt::Display for ProgramError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ProgramError::Killed => write!(f, "{}", ERR_PROGRAM_KILLED),
+            ProgramError::Interrupted => write!(f, "{}", ERR_INTERRUPTED),
+            ProgramError::Panic => write!(f, "{}", ERR_PROGRAM_PANIC),
+        }
+    }
+}
+
+impl std::error::Error for ProgramError {}
 
 /// Program is the runner for a Bubble Tea v2.0.8 application.
 pub struct Program<M: Model> {
     model: M,
     options: ProgramOptions<M>,
     renderer: Box<dyn Renderer>,
+    msg_tx: Option<Sender<Box<dyn Msg>>>,
+    finished: Arc<AtomicBool>,
 }
 
 impl<M: Model> Program<M> {
@@ -45,6 +86,8 @@ impl<M: Model> Program<M> {
             model,
             options: ProgramOptions::default(),
             renderer: Box::new(CursedRenderer::new(w as usize, h as usize)),
+            msg_tx: None,
+            finished: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -54,19 +97,81 @@ impl<M: Model> Program<M> {
         self
     }
 
+    /// <upstream-comment>Send sends a message to the main update function, effectively allowing
+    /// messages to be injected from outside the program for interoperability
+    /// purposes.</upstream-comment>
+    pub fn send(&self, msg: Box<dyn Msg>) {
+        if let Some(tx) = &self.msg_tx {
+            let _ = tx.send(msg);
+        }
+    }
+
+    /// <upstream-comment>Quit is a convenience function for quitting Bubble Tea programs. Use it
+    /// when you need to shut down a Bubble Tea program from the outside.</upstream-comment>
+    pub fn quit(&self) {
+        self.send(Box::new(QuitMsg));
+    }
+
+    /// <upstream-comment>Kill stops the program immediately and restores the former terminal state.
+    /// The final render that you would normally see when quitting will be skipped.
+    /// [Program.Run] returns a [ErrProgramKilled] error.</upstream-comment>
+    pub fn kill(&mut self) {
+        // Disable raw mode and mark the program finished; the run loop observes
+        // the finished flag and exits.
+        let _ = disable_raw_mode();
+        self.finished.store(true, Ordering::SeqCst);
+        if let Some(tx) = &self.msg_tx {
+            let _ = tx.send(Box::new(QuitMsg));
+        }
+    }
+
+    /// <upstream-comment>Wait waits/blocks until the underlying Program finished shutting down.</upstream-comment>
+    pub fn wait(&self) {
+        while !self.finished.load(Ordering::SeqCst) {
+            thread::sleep(Duration::from_millis(10));
+        }
+    }
+
+    /// <upstream-comment>Println prints above the Program. This output is unmanaged by the program
+    /// and will persist across renders by the Program.</upstream-comment>
+    pub fn println(&self, args: &str) {
+        self.send(Box::new(PrintLineMsg {
+            message_body: args.to_string(),
+        }));
+    }
+
+    /// <upstream-comment>Printf prints above the Program. It takes a format template followed by
+    /// values similar to fmt.Printf.</upstream-comment>
+    pub fn printf(&self, body: &str) {
+        self.send(Box::new(PrintLineMsg {
+            message_body: body.to_string(),
+        }));
+    }
+
     /// Helper to process a message, execute terminal commands, and dispatch generated commands.
-    fn handle_msg(&mut self, msg: Box<dyn Msg>, tx: &Sender<Box<dyn Msg>>) -> bool {
+    fn handle_msg(&mut self, msg: Box<dyn Msg>, tx: &Sender<Box<dyn Msg>>) -> Result<bool, ProgramError> {
         let processed_msg = if let Some(ref filter) = self.options.filter {
             match filter(&self.model, msg) {
                 Some(m) => m,
-                None => return false,
+                None => return Ok(false),
             }
         } else {
             msg
         };
 
         if processed_msg.as_ref().as_any().is::<QuitMsg>() {
-            return true;
+            return Ok(true);
+        }
+
+        if processed_msg.as_ref().as_any().is::<InterruptMsg>() {
+            return Err(ProgramError::Interrupted);
+        }
+
+        if processed_msg.as_ref().as_any().is::<SuspendMsg>() {
+            // Best-effort suspension: restore the terminal until a resume
+            // message arrives; the program continues afterwards.
+            let _ = disable_raw_mode();
+            self.send_resume_later(tx);
         }
 
         if processed_msg.as_ref().as_any().is::<ClearScreenMsg>() {
@@ -79,7 +184,7 @@ impl<M: Model> Program<M> {
                 }));
             }
             // RequestWindowSizeMsg itself is internal — don't pass to model.update
-            return false;
+            return Ok(false);
         } else if let Some(ws) = processed_msg.as_ref().as_any().downcast_ref::<WindowSizeMsg>() {
             // Resize the renderer first, then fall through to model.update below
             self.renderer.resize(ws.width, ws.height);
@@ -95,15 +200,21 @@ impl<M: Model> Program<M> {
             // Re-render to flush queued lines
             let view = self.model.view();
             self.renderer.render(view);
-            return false;
+            return Ok(false);
+        } else if let Some(env) = processed_msg.as_ref().as_any().downcast_ref::<EnvMsg>() {
+            let _ = env;
+        } else if let Some(profile) = processed_msg.as_ref().as_any().downcast_ref::<ColorProfileMsg>() {
+            let _ = profile;
+        } else if let Some(_resume) = processed_msg.as_ref().as_any().downcast_ref::<ResumeMsg>() {
+            let _ = enable_raw_mode();
         }
 
         if let Some(_batch) = processed_msg.as_ref().as_any().downcast_ref::<BatchMsg>() {
-            return false;
+            return Ok(false);
         }
 
         if let Some(_seq) = processed_msg.as_ref().as_any().downcast_ref::<SequenceMsg>() {
-            return false;
+            return Ok(false);
         }
 
         let cmd = self.model.update(processed_msg);
@@ -118,7 +229,14 @@ impl<M: Model> Program<M> {
                 }
             });
         }
-        false
+        Ok(false)
+    }
+
+    fn send_resume_later(&self, tx: &Sender<Box<dyn Msg>>) {
+        let tx = tx.clone();
+        thread::spawn(move || {
+            let _ = tx.send(Box::new(ResumeMsg));
+        });
     }
 
     /// Runs the Bubble Tea v2.0.8 event loop until quit.
@@ -127,6 +245,9 @@ impl<M: Model> Program<M> {
         self.renderer.start();
 
         let (tx, rx): (Sender<Box<dyn Msg>>, Receiver<Box<dyn Msg>>) = channel();
+        self.msg_tx = Some(tx.clone());
+
+        let external_ctx = self.options.context.clone();
 
         // Spawn Crossterm input listener thread
         let event_tx = tx.clone();
@@ -239,19 +360,39 @@ impl<M: Model> Program<M> {
             }));
         }
 
+        // Send the environment variables used by the program.
+        let _ = tx.send(Box::new(EnvMsg::from_std()));
+
         // Render initial view frame
         let initial_view = self.model.view();
         self.renderer.render(initial_view);
 
         // Main event processing loop
-        while let Ok(msg) = rx.recv() {
-            if self.handle_msg(msg, &tx) {
-                break;
+        let result = loop {
+            // Check for external context cancellation.
+            if let Some(ctx) = &external_ctx {
+                if ctx.done() {
+                    break Err(ProgramError::Killed);
+                }
             }
-        }
+            match rx.recv_timeout(Duration::from_millis(50)) {
+                Ok(msg) => match self.handle_msg(msg, &tx) {
+                    Ok(true) => break Ok(()),
+                    Ok(false) => continue,
+                    Err(e) => break Err(e),
+                },
+                Err(std::sync::mpsc::RecvTimeoutError::Timeout) => continue,
+                Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => break Ok(()),
+            }
+        };
 
+        self.finished.store(true, Ordering::SeqCst);
         let _ = self.renderer.close();
         let _ = disable_raw_mode();
-        Ok(self.model)
+
+        match result {
+            Ok(()) => Ok(self.model),
+            Err(e) => Err(Box::new(e)),
+        }
     }
 }

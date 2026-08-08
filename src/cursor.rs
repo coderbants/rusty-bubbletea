@@ -52,6 +52,19 @@ pub struct Cursor {
     pub color: Option<Color>,
 }
 
+impl Cursor {
+    /// <upstream-comment>NewCursor returns a new cursor with the default settings and the given
+    /// position.</upstream-comment>
+    pub fn new(x: usize, y: usize) -> Cursor {
+        Cursor {
+            position: Position { x, y },
+            shape: CursorShape::CursorBlock,
+            blink: true,
+            color: None,
+        }
+    }
+}
+
 /// RequestCursorPosMsg is a message that requests the cursor position.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RequestCursorPosMsg;

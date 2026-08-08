@@ -30,6 +30,61 @@ pub enum MouseMode {
     MouseModeAllMotion = 2,
 }
 
+/// ProgressBarState represents the state of the progress bar.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ProgressBarState {
+    /// No progress bar.
+    ProgressBarNone = 0,
+    /// Default progress bar state.
+    ProgressBarDefault,
+    /// Error progress bar state.
+    ProgressBarError,
+    /// Indeterminate progress bar state.
+    ProgressBarIndeterminate,
+    /// Warning progress bar state.
+    ProgressBarWarning,
+}
+
+impl ProgressBarState {
+    /// Returns a human-readable value for the given state.
+    pub fn to_string(&self) -> &'static str {
+        match self {
+            ProgressBarState::ProgressBarNone => "None",
+            ProgressBarState::ProgressBarDefault => "Default",
+            ProgressBarState::ProgressBarError => "Error",
+            ProgressBarState::ProgressBarIndeterminate => "Indeterminate",
+            ProgressBarState::ProgressBarWarning => "Warning",
+        }
+    }
+}
+
+/// ProgressBar represents the terminal progress bar.
+///
+/// Support depends on the terminal.
+///
+/// See <https://learn.microsoft.com/en-us/windows/terminal/tutorials/progress-bar-sequences>
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ProgressBar {
+    /// State is the current state of the progress bar. It can be one of
+    /// [ProgressBarState::ProgressBarNone], [ProgressBarState::ProgressBarDefault],
+    /// [ProgressBarState::ProgressBarError], [ProgressBarState::ProgressBarIndeterminate],
+    /// and [ProgressBarState::ProgressBarWarning].
+    pub state: ProgressBarState,
+    /// Value is the current value of the progress bar. It should be between
+    /// 0 and 100.
+    pub value: usize,
+}
+
+/// NewProgressBar returns a new progress bar with the given state and value.
+/// The value is ignored if the state is [ProgressBarState::ProgressBarNone] or
+/// [ProgressBarState::ProgressBarIndeterminate].
+pub fn new_progress_bar(state: ProgressBarState, value: usize) -> ProgressBar {
+    ProgressBar {
+        state,
+        value: value.clamp(0, 100),
+    }
+}
+
 impl Default for MouseMode {
     fn default() -> Self {
         MouseMode::MouseModeNone
@@ -63,6 +118,8 @@ pub struct View {
     pub mouse_mode: MouseMode,
     /// Keyboard enhancements requested.
     pub keyboard_enhancements: KeyboardEnhancements,
+    /// Optional terminal progress bar.
+    pub progress_bar: Option<ProgressBar>,
 }
 
 impl Default for View {
@@ -79,12 +136,19 @@ impl Default for View {
             disable_bracketed_paste_mode: false,
             mouse_mode: MouseMode::MouseModeNone,
             keyboard_enhancements: KeyboardEnhancements::default(),
+            progress_bar: None,
         }
     }
 }
 
 impl View {
-    /// Creates a new View with initial string content.
+    /// <upstream-comment>NewView is a helper function to create a new [View] with the given styled
+    /// string. A styled string represents text with styles and hyperlinks encoded
+    /// as ANSI escape codes.
+    ///
+    /// ```text
+    /// v := tea.NewView("Hello, World!")
+    /// ```</upstream-comment>
     pub fn new(content: &str) -> Self {
         let mut v = Self::default();
         v.set_content(content);
@@ -94,5 +158,23 @@ impl View {
     /// Helper method to set view content.
     pub fn set_content(&mut self, s: &str) {
         self.content = s.to_string();
+    }
+}
+
+impl View {
+    /// Returns whether two views are equivalent for rendering purposes,
+    /// mirroring the upstream `viewEquals` check used to skip re-renders.
+    pub fn equals(&self, o: &View) -> bool {
+        self.content == o.content
+            && self.alt_screen == o.alt_screen
+            && self.report_focus == o.report_focus
+            && self.disable_bracketed_paste_mode == o.disable_bracketed_paste_mode
+            && self.window_title == o.window_title
+            && self.mouse_mode == o.mouse_mode
+            && self.background_color == o.background_color
+            && self.foreground_color == o.foreground_color
+            && self.keyboard_enhancements == o.keyboard_enhancements
+            && self.cursor == o.cursor
+            && self.progress_bar == o.progress_bar
     }
 }

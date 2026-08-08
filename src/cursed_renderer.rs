@@ -63,6 +63,17 @@ impl Renderer for CursedRenderer {
     fn render(&mut self, view: View) {
         let _guard = self.mtx.lock().unwrap();
 
+        // Skip re-rendering when the frame is unchanged, mirroring the
+        // upstream `viewEquals` optimization.
+        if self.lines_rendered > 0 {
+            if let Some(ref last) = self.last_view {
+                if last.equals(&view) {
+                    self.last_view = Some(view);
+                    return;
+                }
+            }
+        }
+
         // 1. Toggles Alternate Screen
         if view.alt_screen != self.alt_screen_active {
             self.alt_screen_active = view.alt_screen;
@@ -112,12 +123,15 @@ impl Renderer for CursedRenderer {
         let _ = execute!(stdout(), Clear(ClearType::FromCursorDown));
 
         if !view.content.is_empty() {
-            print!("{}", view.content);
+            // Clip each content line to the terminal width, mirroring the
+            // upstream cell buffer which drops cells beyond the screen width.
+            let clipped = clip_to_width(&view.content, self.width);
+            print!("{}", clipped);
             let _ = stdout().flush();
             // Count the number of lines by counting newline characters.
             // A trailing \n means the cursor is on the next (blank) line,
             // which is what the Go implementation tracks.
-            self.lines_rendered = view.content.chars().filter(|&c| c == '\n').count() + 1;
+            self.lines_rendered = clipped.chars().filter(|&c| c == '\n').count() + 1;
         } else {
             self.lines_rendered = 0;
         }
@@ -171,4 +185,25 @@ impl Renderer for CursedRenderer {
         }
         None
     }
+}
+
+/// Clips each line of the content to the given cell width, mirroring the
+/// upstream cell buffer behavior (cells beyond the screen width are dropped).
+fn clip_to_width(content: &str, width: usize) -> String {
+    let mut out = String::new();
+    for line in content.split('\n') {
+        let mut cells = 0usize;
+        for g in unicode_segmentation::UnicodeSegmentation::graphemes(line, true) {
+            let w = charming_x_ansi::util::string_width(g);
+            if cells + w > width {
+                break;
+            }
+            cells += w;
+            out.push_str(g);
+        }
+        out.push('\n');
+    }
+    // Remove the trailing newline added by the per-line loop.
+    out.pop();
+    out
 }

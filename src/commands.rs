@@ -39,6 +39,40 @@ pub fn quit() -> Cmd {
     Some(Box::new(|| Some(Box::new(QuitMsg))))
 }
 
+/// SuspendMsg signals the program should suspend.
+/// This usually happens when ctrl+z is pressed on common programs, but since
+/// bubbletea puts the terminal in raw mode, we need to handle it in a
+/// per-program basis.
+///
+/// You can send this message with `suspend()`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SuspendMsg;
+
+/// Suspend is a special command that tells the Bubble Tea program to suspend.
+pub fn suspend() -> Cmd {
+    Some(Box::new(|| Some(Box::new(SuspendMsg))))
+}
+
+/// ResumeMsg can be listened to do something once a program is resumed back
+/// from a suspend state.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ResumeMsg;
+
+/// InterruptMsg signals the program should interrupt.
+/// This usually happens when ctrl+c is pressed on common programs, but since
+/// bubbletea puts the terminal in raw mode, we need to handle it in a
+/// per-program basis.
+///
+/// You can send this message with `interrupt()`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct InterruptMsg;
+
+/// Interrupt is a special command that tells the Bubble Tea program to
+/// interrupt.
+pub fn interrupt() -> Cmd {
+    Some(Box::new(|| Some(Box::new(InterruptMsg))))
+}
+
 /// Batch performs a bunch of commands concurrently with no ordering guarantees
 /// about the results. Use `batch` to return several commands.
 pub fn batch(cmds: Vec<Cmd>) -> Cmd {

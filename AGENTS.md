@@ -9,6 +9,6 @@
 3. Every ported file MUST include the guiding comment header:
    ```rust
    //! Cleanroom Rust port of upstream Go source file: `<upstream-go-filepath>`
-   //! Upstream Target Tag / Version: `v1.3.4`
+   //! Upstream Target Tag / Version: `v2.0.8`
    ```
 4. Verify all tests pass with `cargo test --all-targets` before committing.

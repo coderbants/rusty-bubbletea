@@ -25,12 +25,18 @@ jobs:
         run: |
           git clone --quiet https://github.com/charmbracelet/bubbletea.git upstream-go
           cd upstream-go && git checkout --quiet v2.0.8
-      - name: Fetch sibling workspace crates (pinned)
-        run: |
-          git clone --quiet https://github.com/coderbants/charming-lipgloss.git ../charming-lipgloss
-          cd ../charming-lipgloss && git checkout --quiet v2.0.5
-          git clone --quiet https://github.com/coderbants/charming-x-ansi.git ../charming-x-ansi
-          cd ../charming-x-ansi && git checkout --quiet dev
+      - name: Fetch sibling charming-lipgloss (pinned)
+        uses: actions/checkout@v4
+        with:
+          repository: coderbants/charming-lipgloss
+          path: ../charming-lipgloss
+          ref: v2.0.5
+      - name: Fetch sibling charming-x-ansi (pinned)
+        uses: actions/checkout@v4
+        with:
+          repository: coderbants/charming-x-ansi
+          path: ../charming-x-ansi
+          ref: dev
       - name: Test
         run: cargo test --all-targets
       - name: Verify example parity (upstream Go vs Rust)

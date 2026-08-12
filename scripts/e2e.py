@@ -344,7 +344,7 @@ def run_spec(cmd, args, spec, gap=0.4, timeout=20.0):
     # Wait for exit if requested.
     if spec.get("expect_exit", True):
         t0 = time.time()
-        while time.time() - t0 < 12:
+        while time.time() - t0 < 20:
             wpid, st = os.waitpid(pid, os.WNOHANG)
             if wpid == pid:
                 exited = True

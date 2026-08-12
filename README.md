@@ -1,15 +1,14 @@
-# Charming Bubble Tea (`charming-bubbletea`)
-
-> [!NOTE]  
-> This library is a cleanroom Rust port of Charmbracelet's upstream Go [Bubble Tea (`charmbracelet/bubbletea`)](https://github.com/charmbracelet/bubbletea) TUI Elm-architecture framework.
-
 <p>
     <a href="charming_bubbletea.png"><img src="charming_bubbletea.png" width="313" alt="Charming Bubble Tea"></a><br>
-    <a href="https://github.com/charmbracelet/bubbletea/releases"><img src="https://img.shields.io/github/release/charmbracelet/bubbletea.svg" alt="Latest Release"></a>
-    <a href="https://pkg.go.dev/github.com/charmbracelet/bubbletea?tab=doc"><img src="https://godoc.org/github.com/charmbracelet/bubbletea?status.svg" alt="GoDoc"></a>
-    <a href="https://github.com/charmbracelet/bubbletea/actions"><img src="https://github.com/charmbracelet/bubbletea/actions/workflows/build.yml/badge.svg" alt="Build Status"></a>
+    <a href="https://crates.io/crates/charming-bubbletea"><img src="https://img.shields.io/crates/v/charming-bubbletea.svg" alt="crates.io"></a>
     <a href="https://www.phorm.ai/query?projectId=a0e324b6-b706-4546-b951-6671ea60c13f"><img src="https://stuff.charm.sh/misc/phorm-badge.svg" alt="phorm.ai"></a>
 </p>
+
+# Charming Bubble Tea (`charming-bubbletea`)
+
+**Charming Bubble Tea** is a complete, from-scratch Rust port of [Bubble Tea](https://github.com/charmbracelet/bubbletea), the Elm-architecture TUI framework that powers Charmbracelet's terminal apps. It tracks upstream Go releases on a rolling basis — this crate mirrors upstream `v2.0.8` — with a hard goal of **1:1 behavioral and visual parity**: the same messages, commands, and rendering output, favoring fidelity to upstream semantics over Rust-native rewrites whenever the two would diverge.
+
+It's part of the Charming port family of the Bubble Tea ecosystem and builds on [charming-ultraviolet](https://github.com/coderbants/charming-ultraviolet) (terminal renderer & input), [charming-lipgloss](https://github.com/coderbants/charming-lipgloss) (styling), [charming-x-ansi](https://github.com/coderbants/charming-x-ansi) (ANSI primitives), and [charming-colorprofile](https://github.com/coderbants/charming-colorprofile) — with UI components available in [charming-bubbles](https://github.com/coderbants/charming-bubbles).
 
 The fun, functional and stateful way to build terminal apps. A Rust port based on [The Elm Architecture][elm] and upstream [charmbracelet/bubbletea](https://github.com/charmbracelet/bubbletea). Bubble Tea is well-suited for simple and complex terminal applications, either inline, full-window, or a mix of both.
 

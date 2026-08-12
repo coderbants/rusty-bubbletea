@@ -81,7 +81,18 @@ if spec.get("expect_exit", True) and not go["exited"]:
 # 2. 1:1 parity: Rust screens + exit must equal Go (animation cells are
 # already zeroed by the driver per the spec's ignore_cells).
 if go["screens"] != rs["screens"]:
-    fails.append("Rust screens differ from Go (1:1 parity failed)")
+    detail = "Rust screens differ from Go (1:1 parity failed)"
+    for i, (g, r) in enumerate(zip(go["screens"], rs["screens"])):
+        if g != r:
+            gc = {(c[0], c[1]): c[2][0] for c in g.get("cells", [])}
+            rc = {(c[0], c[1]): c[2][0] for c in r.get("cells", [])}
+            cells = sorted((k, gc.get(k), rc.get(k))
+                           for k in set(gc) | set(rc) if gc.get(k) != rc.get(k))
+            detail += f"; screen {i} cells differ: "
+            detail += "; ".join(f"({x},{y}) go={gv!r} rs={rv!r}"
+                                for (x, y), gv, rv in cells[:8])
+            break
+    fails.append(detail)
 if go["exited"] != rs["exited"]:
     fails.append("Rust exit behavior differs from Go")
 

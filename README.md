@@ -12,6 +12,14 @@ It's part of the Charming port family of the Bubble Tea ecosystem and builds on 
 
 The fun, functional and stateful way to build terminal apps. A Rust port based on [The Elm Architecture][elm] and upstream [charmbracelet/bubbletea](https://github.com/charmbracelet/bubbletea). Bubble Tea is well-suited for simple and complex terminal applications, either inline, full-window, or a mix of both.
 
+## Installation
+
+```sh
+cargo add charming-bubbletea
+```
+
+Then build your application around a `charming_bubbletea::Program` — see the [tutorial](#tutorial) below to get started.
+
 <p>
     <img src="https://stuff.charm.sh/bubbletea/bubbletea-example.gif" width="100%" alt="Bubble Tea Example">
 </p>

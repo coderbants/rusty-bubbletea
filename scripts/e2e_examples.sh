@@ -91,6 +91,12 @@ if go["screens"] != rs["screens"]:
             detail += f"; screen {i} cells differ: "
             detail += "; ".join(f"({x},{y}) go={gv!r} rs={rv!r}"
                                 for (x, y), gv, rv in cells[:8])
+            gtext = "\n".join("".join(gc.get((x, y), " ") for x in range(g["cols"])).rstrip()
+                              for y in range(min(g["rows"], 14)))
+            rtext = "\n".join("".join(rc.get((x, y), " ") for x in range(r["cols"])).rstrip()
+                              for y in range(min(r["rows"], 14)))
+            detail += "; GO_TEXT=" + repr(gtext[:300])
+            detail += "; RS_TEXT=" + repr(rtext[:300])
             break
     fails.append(detail)
 if go["exited"] != rs["exited"]:

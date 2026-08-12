@@ -41,6 +41,10 @@ impl Context {
     }
 }
 
+/// An event filter invoked before the program processes a message, mirroring
+/// the function type of `WithFilter`.
+pub type EventFilter<M> = Box<dyn Fn(&M, Box<dyn Msg>) -> Option<Box<dyn Msg>> + Send + Sync>;
+
 /// Program configuration options.
 pub struct ProgramOptions<M: Model> {
     /// Target FPS framerate limit.
@@ -58,7 +62,7 @@ pub struct ProgramOptions<M: Model> {
     /// Initial terminal height override.
     pub height: usize,
     /// Optional event filter.
-    pub filter: Option<Box<dyn Fn(&M, Box<dyn Msg>) -> Option<Box<dyn Msg>> + Send + Sync>>,
+    pub filter: Option<EventFilter<M>>,
     /// Input reader override; None means stdin.
     pub input: Option<Box<dyn Read + Send + Sync>>,
     /// Output writer override; None means stdout.
@@ -158,10 +162,7 @@ impl<M: Model> ProgramOptions<M> {
     /// processes a tea.Msg. The event filter can return any tea.Msg which will then
     /// get handled by Bubble Tea instead of the original event. If the event filter
     /// returns None, the event will be ignored and Bubble Tea will not process it.</upstream-comment>
-    pub fn with_filter(
-        mut self,
-        filter: Box<dyn Fn(&M, Box<dyn Msg>) -> Option<Box<dyn Msg>> + Send + Sync>,
-    ) -> Self {
+    pub fn with_filter(mut self, filter: EventFilter<M>) -> Self {
         self.filter = Some(filter);
         self
     }

@@ -43,6 +43,13 @@ pub trait Renderer: Send + Sync {
 
     /// Mouse event interceptor.
     fn on_mouse(&mut self, msg: MouseMsg) -> Cmd;
+
+    /// Sets the cursor movement optimizations (hard tabs, backspace,
+    /// newline mapping).
+    fn set_optimizations(&mut self, hard_tabs: bool, backspace: bool, map_nl: bool);
+
+    /// Sets the terminal color profile used for downsampling colors.
+    fn set_color_profile(&mut self, p: charming_colorprofile::Profile);
 }
 
 /// PrintLineMsg represents a line printed above the TUI.
@@ -55,11 +62,15 @@ pub struct PrintLineMsg {
 /// Println prints above the Program.
 pub fn print_ln(args: fmt::Arguments<'_>) -> Cmd {
     let body = args.to_string();
-    Some(Box::new(move || Some(Box::new(PrintLineMsg { message_body: body }))))
+    Some(Box::new(move || {
+        Some(Box::new(PrintLineMsg { message_body: body }))
+    }))
 }
 
 /// Printf prints formatted output above the Program.
 pub fn print_f(args: fmt::Arguments<'_>) -> Cmd {
     let body = args.to_string();
-    Some(Box::new(move || Some(Box::new(PrintLineMsg { message_body: body }))))
+    Some(Box::new(move || {
+        Some(Box::new(PrintLineMsg { message_body: body }))
+    }))
 }

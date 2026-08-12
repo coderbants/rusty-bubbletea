@@ -19,10 +19,7 @@ pub struct FileLogger {
 impl FileLogger {
     /// Creates a new FileLogger.
     pub fn new(path: &str, prefix: &str) -> Result<Self, std::io::Error> {
-        let file = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(path)?;
+        let file = OpenOptions::new().create(true).append(true).open(path)?;
         let mut pref = prefix.to_string();
         if !pref.is_empty() && !pref.ends_with(' ') {
             pref.push(' ');

@@ -9,5 +9,8 @@
 
 /// BSD termios support indicator.
 pub fn is_bsd_termios() -> bool {
-    cfg!(target_os = "freebsd") || cfg!(target_os = "macos") || cfg!(target_os = "openbsd") || cfg!(target_os = "netbsd")
+    cfg!(target_os = "freebsd")
+        || cfg!(target_os = "macos")
+        || cfg!(target_os = "openbsd")
+        || cfg!(target_os = "netbsd")
 }

@@ -21,10 +21,19 @@ use std::fmt::Debug;
 pub trait Msg: Any + Send + Sync + Debug {
     /// Helper to downcast to Any.
     fn as_any(&self) -> &dyn Any;
+
+    /// Consumes the boxed message and returns it as a `Box<dyn Any>`, so the
+    /// program can move the concrete message out of the trait object (used to
+    /// dispatch the commands carried by `BatchMsg`/`SequenceMsg`).
+    fn into_any(self: Box<Self>) -> Box<dyn Any>;
 }
 
 impl<T: Any + Send + Sync + Debug> Msg for T {
     fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn into_any(self: Box<Self>) -> Box<dyn Any> {
         self
     }
 }
@@ -40,7 +49,7 @@ pub trait Model: Send + Sync + Sized + 'static {
     }
 
     /// Update receives a message and returns an updated Model and optional command.
-    fn update(&mut self, msg: Box<dyn Msg>) -> Cmd;
+    fn update(&mut self, msg: &dyn Msg) -> Cmd;
 
     /// View renders the program's UI as a declarative `View` struct.
     fn view(&self) -> View;

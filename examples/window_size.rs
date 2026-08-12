@@ -12,7 +12,7 @@ impl Model for ModelImpl {
         None
     }
 
-    fn update(&mut self, msg: Box<dyn Msg>) -> Cmd {
+    fn update(&mut self, msg: &dyn Msg) -> Cmd {
         if let Some(k) = msg.as_any().downcast_ref::<KeyPressMsg>() {
             let s = k.0.to_string();
             if s == "ctrl+c" || s == "q" || s == "esc" {
@@ -22,14 +22,19 @@ impl Model for ModelImpl {
         }
 
         if let Some(ws) = msg.as_any().downcast_ref::<WindowSizeMsg>() {
-            return print_f(format_args!("The window size is: {}x{}", ws.width, ws.height));
+            return print_f(format_args!(
+                "The window size is: {}x{}",
+                ws.width, ws.height
+            ));
         }
 
         None
     }
 
     fn view(&self) -> View {
-        View::new("\nWhen you're done press q to quit.\nPress any other key to query the window-size.\n")
+        View::new(
+            "\nWhen you're done press q to quit.\nPress any other key to query the window-size.\n",
+        )
     }
 }
 

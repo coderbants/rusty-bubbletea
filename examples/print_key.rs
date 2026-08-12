@@ -5,9 +5,7 @@
 
 use charming_bubbletea::keyboard::KeyboardEnhancements;
 use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::{
-    Cmd, KeyPressMsg, KeyboardEnhancementsMsg, Msg, Program, View,
-};
+use charming_bubbletea::{Cmd, KeyPressMsg, KeyboardEnhancementsMsg, Msg, Program, View};
 
 struct KeyModel;
 
@@ -16,7 +14,7 @@ impl ModelTrait for KeyModel {
         None
     }
 
-    fn update(&mut self, msg: Box<dyn Msg>) -> Cmd {
+    fn update(&mut self, msg: &dyn Msg) -> Cmd {
         if let Some(enh) = msg.as_any().downcast_ref::<KeyboardEnhancementsMsg>() {
             return charming_bubbletea::renderer::print_ln(format_args!(
                 "Keyboard enhancements: EventTypes: {}",
@@ -28,17 +26,33 @@ impl ModelTrait for KeyModel {
             if k.0.to_string() == "ctrl+c" {
                 return charming_bubbletea::quit();
             }
-            return charming_bubbletea::renderer::print_ln(format_args!(
-                "You pressed: {}",
-                k.0.to_string()
-            ));
+            // Mirror upstream `fmt.Sprintf("(%T) You pressed: %s", msg, ...)`
+            // with Go's type name for KeyPressMsg.
+            let mut format = format!("(tea.KeyPressMsg) You pressed: {}", k.0);
+            if !k.0.text.is_empty() {
+                format += &format!(" (text: {:?})", k.0.text);
+            }
+            return charming_bubbletea::renderer::print_ln(format_args!("{}", format));
+        }
+
+        if let Some(k) = msg
+            .as_any()
+            .downcast_ref::<charming_bubbletea::KeyReleaseMsg>()
+        {
+            let mut format = format!("(tea.KeyReleaseMsg) You pressed: {}", k.0);
+            if !k.0.text.is_empty() {
+                format += &format!(" (text: {:?})", k.0.text);
+            }
+            return charming_bubbletea::renderer::print_ln(format_args!("{}", format));
         }
 
         None
     }
 
     fn view(&self) -> View {
-        let mut v = View::new("Press any key to see its details printed to the terminal. Press 'ctrl+c' to quit.");
+        let mut v = View::new(
+            "Press any key to see its details printed to the terminal. Press 'ctrl+c' to quit.",
+        );
         v.keyboard_enhancements = KeyboardEnhancements {
             report_event_types: true,
             ..KeyboardEnhancements::default()

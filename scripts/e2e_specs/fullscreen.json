@@ -1,0 +1,1 @@
+{"width": 80, "height": 24, "phases": [{"sleep": 1.2, "expect": ["Hi. This program will exit in 4 seconds..."]}, {"sleep": 4.5}], "expect_exit": true}

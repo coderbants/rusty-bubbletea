@@ -1,0 +1,1 @@
+{"width": 80, "height": 24, "phases": [{"sleep": 0.5, "expect": ["tab: focus next", "q: exit"], "ignore_cells": [[22, 2], [5, 2], [6, 2], [7, 2]]}, {"keys": "n", "settle": 0.4, "ignore_cells": [[22, 2], [5, 2], [6, 2], [7, 2]]}, {"keys": "q", "settle": 0.5}], "expect_exit": true}

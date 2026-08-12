@@ -1,0 +1,1 @@
+{"width": 80, "height": 24, "phases": [{"sleep": 0.5, "expect": ["Press any key to quit."]}, {"keys": "x", "settle": 0.5}], "expect_exit": true}

@@ -1,0 +1,1 @@
+{"width": 80, "height": 24, "phases": [{"sleep": 0.5, "expect": ["Item 1"]}, {"keys": "l", "settle": 0.4, "expect": ["Item 11"]}, {"keys": "h", "settle": 0.4, "expect": ["Item 1"]}, {"keys": "q", "settle": 0.5}], "expect_exit": true}

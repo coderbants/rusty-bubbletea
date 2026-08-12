@@ -1,0 +1,1 @@
+{"width": 80, "height": 24, "phases": [{"sleep": 0.5, "expect": ["NAME", "Bulbasaur"]}, {"keys": "q", "settle": 0.5}], "expect_exit": true}

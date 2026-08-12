@@ -1,0 +1,1 @@
+{"width": 80, "height": 24, "phases": [{"sleep": 0.6, "expect": ["Loading forever...press q to quit"]}, {"keys": "q", "settle": 0.5}], "expect_exit": true, "ignore_cells": [[3, 2]]}

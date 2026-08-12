@@ -1,0 +1,1 @@
+{"width": 80, "height": 24, "phases": [{"sleep": 0.5, "expect": ["What kind of Bubble Tea would you like to order?", "(•) Taro", "( ) Coffee", "( ) Lychee"]}, {"keys": "j", "settle": 0.4, "expect": ["(•) Coffee"]}, {"keys": "\r", "settle": 0.6, "expect": ["You chose Coffee!"]}], "expect_exit": true}

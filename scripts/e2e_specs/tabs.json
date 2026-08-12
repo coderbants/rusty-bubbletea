@@ -1,0 +1,1 @@
+{"width": 80, "height": 24, "phases": [{"sleep": 0.5, "expect": ["Lip Gloss", "Blush", "Lip Gloss Tab"]}, {"keys": "\u001b[C", "settle": 0.4, "expect": ["Blush Tab"]}, {"keys": "\u001b[D", "settle": 0.4, "expect": ["Lip Gloss Tab"]}, {"keys": "q", "settle": 0.5}], "expect_exit": true}

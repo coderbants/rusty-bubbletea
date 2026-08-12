@@ -1,0 +1,1 @@
+{"width": 80, "height": 24, "phases": [{"sleep": 0.5, "expect": ["My Fave Things"]}, {"keys": "j", "settle": 0.4}, {"keys": "g", "settle": 0.4}, {"keys": "\u0003", "settle": 0.5}], "expect_exit": true}

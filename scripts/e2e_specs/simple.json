@@ -1,0 +1,1 @@
+{"width": 80, "height": 24, "phases": [{"sleep": 1.8, "expect": ["Hi. This program will exit in", "To quit sooner press ctrl-c, or press ctrl-z to suspend"]}, {"keys": "q", "settle": 0.5}], "expect_exit": true, "ignore_cells": [[30, 0], [31, 0]]}

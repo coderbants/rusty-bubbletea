@@ -18,11 +18,13 @@ use crate::cursor::Cursor;
 use crate::keyboard::KeyboardEnhancements;
 use crate::model::Cmd;
 use crate::mouse::MouseMsg;
+use std::sync::Arc;
 
 /// MouseMode enum for declarative views.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum MouseMode {
     /// Disable mouse events.
+    #[default]
     MouseModeNone = 0,
     /// Cell motion mouse events.
     MouseModeCellMotion = 1,
@@ -85,14 +87,12 @@ pub fn new_progress_bar(state: ProgressBarState, value: usize) -> ProgressBar {
     }
 }
 
-impl Default for MouseMode {
-    fn default() -> Self {
-        MouseMode::MouseModeNone
-    }
-}
-
 /// OnMouseFn closure type for View mouse handlers.
-pub type OnMouseFn = Box<dyn Fn(MouseMsg) -> Cmd + Send + Sync>;
+///
+/// `Arc` (rather than `Box`) so that [View] clones preserve the handler:
+/// the renderer clones the view each frame and needs the closure on
+/// `last_view` to route mouse messages back to the model.
+pub type OnMouseFn = Arc<dyn Fn(MouseMsg) -> Cmd + Send + Sync>;
 
 /// View represents a declarative terminal view in Bubble Tea v2.0.8.
 pub struct View {
@@ -120,6 +120,41 @@ pub struct View {
     pub keyboard_enhancements: KeyboardEnhancements,
     /// Optional terminal progress bar.
     pub progress_bar: Option<ProgressBar>,
+}
+
+impl Clone for View {
+    fn clone(&self) -> View {
+        View {
+            content: self.content.clone(),
+            on_mouse: self.on_mouse.clone(),
+            cursor: self.cursor.clone(),
+            background_color: self.background_color,
+            foreground_color: self.foreground_color,
+            window_title: self.window_title.clone(),
+            alt_screen: self.alt_screen,
+            report_focus: self.report_focus,
+            disable_bracketed_paste_mode: self.disable_bracketed_paste_mode,
+            mouse_mode: self.mouse_mode,
+            keyboard_enhancements: self.keyboard_enhancements,
+            progress_bar: self.progress_bar,
+        }
+    }
+}
+
+impl PartialEq for View {
+    fn eq(&self, other: &View) -> bool {
+        self.content == other.content
+            && self.cursor == other.cursor
+            && self.background_color == other.background_color
+            && self.foreground_color == other.foreground_color
+            && self.window_title == other.window_title
+            && self.alt_screen == other.alt_screen
+            && self.report_focus == other.report_focus
+            && self.disable_bracketed_paste_mode == other.disable_bracketed_paste_mode
+            && self.mouse_mode == other.mouse_mode
+            && self.keyboard_enhancements == other.keyboard_enhancements
+            && self.progress_bar == other.progress_bar
+    }
 }
 
 impl Default for View {

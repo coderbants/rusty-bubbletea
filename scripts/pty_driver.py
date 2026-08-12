@@ -28,7 +28,7 @@ def set_win_size(fd, width, height):
     fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack("HHHH", height, width, 0, 0))
 
 
-def run(cmd, args, width, height, keys, delay, settle, timeout):
+def run(cmd, args, width, height, keys, delay, settle, timeout, gap=0.4):
     pid, master = pty.fork()
     if pid == 0:
         # Child: attach to the pty and exec the command.
@@ -43,11 +43,29 @@ def run(cmd, args, width, height, keys, delay, settle, timeout):
     sent_at = None
     exited = False
     while time.time() - start < timeout:
-        # Send the key sequence once after `delay` seconds.
+        # Send the key sequence once after `delay` seconds. The child may not
+        # have opened the slave yet (macOS pty writes then fail with EIO), so
+        # hold the keys until the child has been alive for at least 100ms.
+        # Phases separated by '|' are sent `gap` seconds apart, letting
+        # multi-key scripts land on deterministic render boundaries.
         if not sent and time.time() - start >= delay:
-            os.write(master, keys)
+            # For early sends (delay < 0.1) the write races the child's
+            # slave-open; the retry loop below handles EIO. For later sends,
+            # hold to 150ms so the child is guaranteed to be up.
+            if delay >= 0.1 and time.time() - start < 0.15:
+                time.sleep(0.15 - (time.time() - start))
             sent = True
             sent_at = time.time()
+            phases = keys.split(b"|")
+            for phase in phases:
+                for attempt in range(3):
+                    try:
+                        os.write(master, phase)
+                        break
+                    except OSError:
+                        time.sleep(0.05)
+                if phase is not phases[-1]:
+                    time.sleep(gap)
         # Read any available output.
         r, _, _ = select.select([master], [], [], 0.05)
         if r:
@@ -58,6 +76,8 @@ def run(cmd, args, width, height, keys, delay, settle, timeout):
             if not data:
                 break
             out.extend(data)
+            if os.environ.get("DRIVER_DEBUG"):
+                print("READ:", len(data), file=sys.stderr)
         # After the keys are sent, give the program `settle` seconds to
         # render its final state before closing.
         if sent and time.time() - sent_at >= settle:
@@ -96,9 +116,10 @@ def main():
     p.add_argument("--delay", type=float, default=0.8)
     p.add_argument("--settle", type=float, default=0.8)
     p.add_argument("--timeout", type=float, default=15.0)
+    p.add_argument("--gap", type=float, default=0.4)
     args = p.parse_args()
     keys = args.keys.encode("latin1").decode("unicode_escape").encode("latin1")
-    run(args.cmd, args.args, args.width, args.height, keys, args.delay, args.settle, args.timeout)
+    run(args.cmd, args.args, args.width, args.height, keys, args.delay, args.settle, args.timeout, args.gap)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,1 @@
+{"width": 80, "height": 24, "phases": [{"sleep": 0.5, "expect": ["City", "Population"]}, {"keys": "\u001b", "settle": 0.4}, {"keys": "j", "settle": 0.4}, {"keys": "\r", "settle": 0.6, "expect": ["Let's go to Tokyo!"]}, {"keys": "q", "settle": 0.5}], "expect_exit": true}

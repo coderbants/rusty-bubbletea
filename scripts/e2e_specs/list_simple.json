@@ -1,0 +1,1 @@
+{"width": 80, "height": 24, "phases": [{"sleep": 0.5, "expect": ["What do you want for dinner?", "Ramen"]}, {"keys": "j", "settle": 0.4, "expect": ["Tomato Soup"]}, {"keys": "\r", "settle": 0.5, "expect": ["Tomato Soup"]}], "expect_exit": true}

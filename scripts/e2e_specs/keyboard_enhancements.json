@@ -1,0 +1,1 @@
+{"width": 80, "height": 24, "phases": [{"sleep": 0.5, "expect": ["This demo logs key events. Press ctrl+c to quit."]}, {"keys": "a", "settle": 0.4}, {"keys": "\u0003", "settle": 0.5}], "expect_exit": true}

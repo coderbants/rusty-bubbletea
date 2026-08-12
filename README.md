@@ -4,7 +4,7 @@
 > This library is a cleanroom Rust port of Charmbracelet's upstream Go [Bubble Tea (`charmbracelet/bubbletea`)](https://github.com/charmbracelet/bubbletea) TUI Elm-architecture framework.
 
 <p>
-    <a href="https://stuff.charm.sh/bubbletea/bubbletea-4k.png"><img src="https://github.com/charmbracelet/bubbletea/assets/25087/108d4fdb-d554-4910-abed-2a5f5586a60e" width="313" alt="Bubble Tea Title Treatment"></a><br>
+    <a href="charming_bubbletea.png"><img src="charming_bubbletea.png" width="313" alt="Charming Bubble Tea"></a><br>
     <a href="https://github.com/charmbracelet/bubbletea/releases"><img src="https://img.shields.io/github/release/charmbracelet/bubbletea.svg" alt="Latest Release"></a>
     <a href="https://pkg.go.dev/github.com/charmbracelet/bubbletea?tab=doc"><img src="https://godoc.org/github.com/charmbracelet/bubbletea?status.svg" alt="GoDoc"></a>
     <a href="https://github.com/charmbracelet/bubbletea/actions"><img src="https://github.com/charmbracelet/bubbletea/actions/workflows/build.yml/badge.svg" alt="Build Status"></a>

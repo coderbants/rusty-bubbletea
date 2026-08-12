@@ -7,7 +7,68 @@
 //! TTY initialization, input stream setup, raw mode toggles, and window dimension queries for Bubble Tea v2.0.8.
 //! </public-docs>
 
-use crossterm::terminal::{disable_raw_mode, enable_raw_mode, size as term_size};
+use crossterm::terminal::size as term_size;
+use std::sync::{Mutex, OnceLock};
+
+/// Saved terminal state for the raw mode toggle, mirroring the upstream
+/// `p.previousTtyInputState` (x/term `MakeRaw`/`Restore`).
+static SAVED_TERMIOS: OnceLock<Mutex<Option<libc::termios>>> = OnceLock::new();
+
+/// Initializes terminal raw mode, mirroring the upstream `initInput` ->
+/// `term.MakeRaw` path (`tty_unix.go`). Unlike a fully-zeroed `cfmakeraw`,
+/// only `OPOST` is cleared from the output flags, so `TABDLY` (and thus the
+/// hard-tab cursor optimization) behaves exactly as it does upstream.
+pub fn enable_raw_mode() -> std::io::Result<()> {
+    use std::os::fd::AsRawFd;
+    let fd = std::io::stdin().as_raw_fd();
+    let mut t: libc::termios = unsafe { std::mem::zeroed() };
+    if unsafe { libc::tcgetattr(fd, &mut t) } != 0 {
+        return Err(std::io::Error::last_os_error());
+    }
+    *SAVED_TERMIOS
+        .get_or_init(|| Mutex::new(None))
+        .lock()
+        .unwrap() = Some(t);
+
+    // This attempts to replicate the behaviour documented for cfmakeraw in
+    // the termios(3) manpage, as x/term's `makeRaw` does.
+    t.c_iflag &= !(libc::IGNBRK
+        | libc::BRKINT
+        | libc::PARMRK
+        | libc::ISTRIP
+        | libc::INLCR
+        | libc::IGNCR
+        | libc::ICRNL
+        | libc::IXON);
+    t.c_oflag &= !libc::OPOST;
+    t.c_lflag &= !(libc::ECHO | libc::ECHONL | libc::ICANON | libc::ISIG | libc::IEXTEN);
+    t.c_cflag &= !(libc::CSIZE | libc::PARENB);
+    t.c_cflag |= libc::CS8;
+    t.c_cc[libc::VMIN] = 1;
+    t.c_cc[libc::VTIME] = 0;
+    if unsafe { libc::tcsetattr(fd, libc::TCSANOW, &t) } != 0 {
+        return Err(std::io::Error::last_os_error());
+    }
+    Ok(())
+}
+
+/// Restores the terminal state saved by [`enable_raw_mode`], mirroring the
+/// upstream `term.Restore` path.
+pub fn disable_raw_mode() -> std::io::Result<()> {
+    use std::os::fd::AsRawFd;
+    let saved = SAVED_TERMIOS
+        .get_or_init(|| Mutex::new(None))
+        .lock()
+        .unwrap()
+        .take();
+    if let Some(t) = saved {
+        let fd = std::io::stdin().as_raw_fd();
+        if unsafe { libc::tcsetattr(fd, libc::TCSANOW, &t) } != 0 {
+            return Err(std::io::Error::last_os_error());
+        }
+    }
+    Ok(())
+}
 
 /// Initializes terminal raw mode.
 pub fn init_terminal() -> Result<(), Box<dyn std::error::Error>> {

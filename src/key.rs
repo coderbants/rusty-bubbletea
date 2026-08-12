@@ -14,18 +14,24 @@ use std::fmt;
 pub struct KeyMod(pub u8);
 
 impl KeyMod {
-    /// Ctrl key modifier flag.
-    pub const CTRL: KeyMod = KeyMod(1 << 0);
+    // NOTE: modifier bit values match the kitty keyboard protocol bitmask
+    // (upstream tea aliases `uv.KeyMod`): shift=1, alt=2, ctrl=4, ...
+    /// Shift key modifier flag.
+    pub const SHIFT: KeyMod = KeyMod(1 << 0);
     /// Alt key modifier flag.
     pub const ALT: KeyMod = KeyMod(1 << 1);
-    /// Shift key modifier flag.
-    pub const SHIFT: KeyMod = KeyMod(1 << 2);
+    /// Ctrl key modifier flag.
+    pub const CTRL: KeyMod = KeyMod(1 << 2);
     /// Meta key modifier flag.
     pub const META: KeyMod = KeyMod(1 << 3);
     /// Hyper key modifier flag.
     pub const HYPER: KeyMod = KeyMod(1 << 4);
     /// Super key modifier flag.
     pub const SUPER: KeyMod = KeyMod(1 << 5);
+    /// CapsLock key lock state flag.
+    pub const CAPS_LOCK: KeyMod = KeyMod(1 << 6);
+    /// NumLock key lock state flag.
+    pub const NUM_LOCK: KeyMod = KeyMod(1 << 7);
 
     /// Checks if a modifier flag is contained.
     pub fn contains(&self, flag: KeyMod) -> bool {
@@ -91,7 +97,7 @@ impl Key {
     }
 
     /// String representation of key event. Returns "space" for spacebar.
-    pub fn to_string(&self) -> String {
+    pub fn string(&self) -> String {
         if self.code == ' ' {
             "space".to_string()
         } else if !self.text.is_empty() {
@@ -145,7 +151,7 @@ impl Key {
 
 impl fmt::Display for Key {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.to_string())
+        write!(f, "{}", self.string())
     }
 }
 
@@ -155,7 +161,7 @@ pub struct KeyPressMsg(pub Key);
 
 impl fmt::Display for KeyPressMsg {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0.to_string())
+        write!(f, "{}", self.0.string())
     }
 }
 
@@ -165,7 +171,7 @@ pub struct KeyReleaseMsg(pub Key);
 
 impl fmt::Display for KeyReleaseMsg {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0.to_string())
+        write!(f, "{}", self.0.string())
     }
 }
 
@@ -190,6 +196,6 @@ impl KeyMsg {
 
 impl fmt::Display for KeyMsg {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.key().to_string())
+        write!(f, "{}", self.key().string())
     }
 }

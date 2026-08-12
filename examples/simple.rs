@@ -5,8 +5,8 @@
 
 use std::time::Duration;
 
-use charming_bubbletea::{quit, suspend, Cmd, KeyPressMsg, Msg, Program, View};
 use charming_bubbletea::model::Model as ModelTrait;
+use charming_bubbletea::{quit, suspend, Cmd, KeyPressMsg, Msg, Program, View};
 
 /// A model can be more or less any type of data. It holds all the data for a
 /// program, so often it's a struct. For this simple example, however, all
@@ -44,7 +44,7 @@ impl ModelTrait for CountdownModel {
     /// inspect the message and send back an updated model accordingly. You can
     /// also return a command, which is a function that performs I/O and
     /// returns a message.
-    fn update(&mut self, msg: Box<dyn Msg>) -> Cmd {
+    fn update(&mut self, msg: &dyn Msg) -> Cmd {
         if let Some(k) = msg.as_any().downcast_ref::<KeyPressMsg>() {
             match k.0.to_string().as_str() {
                 "ctrl+c" | "q" => return quit(),
@@ -55,7 +55,7 @@ impl ModelTrait for CountdownModel {
 
         if msg.as_any().is::<TickMsg>() {
             self.countdown = self.countdown.saturating_sub(1);
-            if self.countdown <= 0 {
+            if self.countdown == 0 {
                 return quit();
             }
             return Self::tick();

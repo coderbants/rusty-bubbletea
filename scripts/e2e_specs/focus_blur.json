@@ -1,0 +1,1 @@
+{"width": 80, "height": 24, "phases": [{"sleep": 0.5, "expect": ["Focus report is currently enabled.", "This program is currently focused!"]}, {"keys": "t", "settle": 0.4, "expect": ["Focus report is currently disabled."]}, {"keys": "q", "settle": 0.5}], "expect_exit": true}

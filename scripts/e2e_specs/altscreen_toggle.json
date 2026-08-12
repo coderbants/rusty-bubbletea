@@ -1,0 +1,1 @@
+{"width": 80, "height": 24, "phases": [{"sleep": 0.5, "expect": ["You're in  inline mode", "space: switch modes"]}, {"keys": " ", "settle": 0.4, "expect": ["You're in  altscreen mode"]}, {"keys": " ", "settle": 0.4}, {"keys": "q", "settle": 0.5}], "expect_exit": true, "ignore_cells": [[0, 2], [1, 2]]}

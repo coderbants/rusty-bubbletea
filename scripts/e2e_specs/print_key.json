@@ -1,0 +1,1 @@
+{"width": 80, "height": 24, "phases": [{"sleep": 0.5, "expect": ["Press any key to see its details printed to the terminal. Press 'ctrl+c' to quit"]}, {"keys": "a", "settle": 0.5, "expect": ["(tea.KeyPressMsg) You pressed: a"]}, {"keys": "\u0003", "settle": 0.5}], "expect_exit": true}

@@ -1,0 +1,1 @@
+{"width": 80, "height": 24, "phases": [{"sleep": 0.5, "expect": ["The window title has been set to 'Hello, Bubble Tea'"]}, {"keys": "x", "settle": 0.5}], "expect_exit": true}

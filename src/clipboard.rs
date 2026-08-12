@@ -72,7 +72,9 @@ pub struct SetPrimaryClipboardMsg(pub String);
 /// Note that OSC52 is not supported in all terminals.
 pub fn set_primary_clipboard(s: &str) -> Cmd {
     let text = s.to_string();
-    Some(Box::new(move || Some(Box::new(SetPrimaryClipboardMsg(text)))))
+    Some(Box::new(move || {
+        Some(Box::new(SetPrimaryClipboardMsg(text)))
+    }))
 }
 
 /// ReadPrimaryClipboardMsg is an internal message used to read the primary

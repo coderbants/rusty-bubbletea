@@ -1,0 +1,1 @@
+{"width": 80, "height": 24, "phases": [{"sleep": 0.5, "expect": ["Waiting for input...", "? toggle help"]}, {"keys": "j", "settle": 0.4}, {"keys": "k", "settle": 0.4}, {"keys": "?", "settle": 0.4, "expect": ["move up", "move down", "move left"]}, {"keys": "q", "settle": 0.5}], "expect_exit": true}

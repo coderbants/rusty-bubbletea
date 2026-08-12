@@ -7,7 +7,7 @@ impl Model for ExecModel {
         None
     }
 
-    fn update(&mut self, msg: Box<dyn Msg>) -> Cmd {
+    fn update(&mut self, msg: &dyn Msg) -> Cmd {
         if let Some(k) = msg.as_any().downcast_ref::<KeyPressMsg>() {
             let key_str = k.0.to_string();
             if key_str == "q" || key_str == "ctrl+c" {

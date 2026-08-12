@@ -37,4 +37,8 @@ impl Renderer for NilRenderer {
     fn on_mouse(&mut self, _msg: MouseMsg) -> Cmd {
         None
     }
+
+    fn set_optimizations(&mut self, _hard_tabs: bool, _backspace: bool, _map_nl: bool) {}
+
+    fn set_color_profile(&mut self, _p: charming_colorprofile::Profile) {}
 }

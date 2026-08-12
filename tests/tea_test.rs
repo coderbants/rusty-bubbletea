@@ -10,7 +10,7 @@ impl Model for TestModel {
         quit()
     }
 
-    fn update(&mut self, _msg: Box<dyn Msg>) -> Cmd {
+    fn update(&mut self, _msg: &dyn Msg) -> Cmd {
         self.counter += 1;
         quit()
     }

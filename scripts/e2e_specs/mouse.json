@@ -1,0 +1,1 @@
+{"width": 80, "height": 24, "phases": [{"sleep": 0.5, "expect": ["Do mouse stuff. When you're done press q to quit."]}, {"keys": "\u001b[<0;40;12M", "settle": 0.4, "expect": ["X: 39, Y: 11", "left"]}, {"keys": "q", "settle": 0.5}], "expect_exit": true}

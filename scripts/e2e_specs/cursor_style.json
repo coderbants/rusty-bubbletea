@@ -1,0 +1,1 @@
+{"width": 80, "height": 24, "phases": [{"sleep": 0.5, "expect": ["Press left/right to change the cursor style"]}, {"keys": "l", "settle": 0.4}, {"keys": "h", "settle": 0.4}, {"keys": "q", "settle": 0.5}], "expect_exit": true}

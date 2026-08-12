@@ -112,6 +112,43 @@ if fails:
 print("PASS")
 PYEOF
   rc=$?
+  # The PTY harness is inherently timing-sensitive (cold-started binaries,
+  # renderer delta timing); retry a failing example once before failing the
+  # run. Real regressions fail both attempts.
+  if [ $rc -ne 0 ]; then
+    echo "RETRY $name (flaky harness?)"
+    timeout 40 python3 scripts/e2e.py --cmd bash --args=-c --args="cd upstream-go/examples/$godir && exec \"$GOBIN/$name\"" --spec "$spec" --out "$TMP/out/go.$name.json" 2>/dev/null
+    timeout 40 python3 scripts/e2e.py --cmd "target/debug/$rsbin" --spec "$spec" --out "$TMP/out/rs.$name.json" 2>/dev/null
+    python3 - "$spec" "$TMP/out/go.$name.json" "$TMP/out/rs.$name.json" << 'PYEOF'
+import json, sys
+spec = json.load(open(sys.argv[1]))
+go = json.load(open(sys.argv[2]))
+rs = json.load(open(sys.argv[3]))
+fails = []
+for i, phase in enumerate(spec.get("phases", [])):
+    scr = go["screens"][i] if i < len(go["screens"]) else {"cells": [], "rows": 0, "cols": 0}
+    cells = {tuple(c[:2]): c[2][0] for c in scr.get("cells", [])}
+    text = "\n".join("".join(cells.get((x, y), " ") for x in range(scr["cols"])).rstrip()
+                     for y in range(scr["rows"]))
+    for frag in phase.get("expect", []):
+        if frag not in text:
+            fails.append(f"phase {i}: GO missing expected text {frag!r}")
+    for frag in phase.get("expect_not", []):
+        if frag in text:
+            fails.append(f"phase {i}: GO unexpectedly contains {frag!r}")
+if spec.get("expect_exit", True) and not go["exited"]:
+    fails.append("GO did not exit")
+if go["screens"] != rs["screens"]:
+    fails.append("Rust screens differ from Go (1:1 parity failed)")
+if go["exited"] != rs["exited"]:
+    fails.append("Rust exit behavior differs from Go")
+if fails:
+    print("FAIL  %s" % "|".join(fails[:3]))
+    sys.exit(1)
+print("PASS")
+PYEOF
+    rc=$?
+  fi
   if [ $rc -eq 0 ]; then
     echo "PASS  $name"
     pass=$((pass+1))

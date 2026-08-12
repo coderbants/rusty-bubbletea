@@ -1,6 +1,7 @@
 <p>
     <a href="charming_bubbletea.png"><img src="charming_bubbletea.png" width="313" alt="Charming Bubble Tea"></a><br>
     <a href="https://crates.io/crates/charming-bubbletea"><img src="https://img.shields.io/crates/v/charming-bubbletea.svg" alt="crates.io"></a>
+    <a href="https://github.com/coderbants/charming-bubbletea/actions"><img src="https://github.com/coderbants/charming-bubbletea/actions/workflows/ci.yml/badge.svg" alt="Build Status"></a>
     <a href="https://www.phorm.ai/query?projectId=a0e324b6-b706-4546-b951-6671ea60c13f"><img src="https://stuff.charm.sh/misc/phorm-badge.svg" alt="phorm.ai"></a>
 </p>
 
@@ -59,23 +60,79 @@ Bubble Tea programs are comprised of a **model** that describes the application 
 - **view**, a function that renders the UI based on the data in the model.
 
 ```rust
-use charming_bubbletea::*;
+use charming_bubbletea::model::Model as ModelTrait;
+use charming_bubbletea::{quit, Cmd, KeyPressMsg, Msg, Program, View};
+use std::collections::HashSet;
 
 struct Model {
     choices: Vec<String>,
     cursor: usize,
-    selected: std::collections::HashSet<usize>,
+    selected: HashSet<usize>,
 }
 
-fn initial_model() -> Model {
-    let mut selected = std::collections::HashSet::new();
-    Model {
-        choices: vec!["Buy carrots".to_string(), "Buy celery".to_string(), "Buy kohlrabi".to_string()],
-        cursor: 0,
-        selected,
+impl ModelTrait for Model {
+    // The initial command. We don't need to kick off anything, so return None.
+    fn init(&self) -> Cmd {
+        None
+    }
+
+    // Handle incoming events. Key presses move the cursor, toggle a choice,
+    // or quit.
+    fn update(&mut self, msg: &dyn Msg) -> Cmd {
+        if let Some(k) = msg.as_any().downcast_ref::<KeyPressMsg>() {
+            match k.0.to_string().as_str() {
+                "j" | "down" => self.cursor = (self.cursor + 1).min(self.choices.len() - 1),
+                "k" | "up" => self.cursor = self.cursor.saturating_sub(1),
+                "enter" | " " => {
+                    if !self.selected.insert(self.cursor) {
+                        self.selected.remove(&self.cursor);
+                    }
+                }
+                "q" | "ctrl+c" => return quit(),
+                _ => {}
+            }
+        }
+        None
+    }
+
+    // Render the current state to a View. Build a plain string and wrap it.
+    fn view(&self) -> View {
+        let mut s = String::from("What should we buy at the market?\n\n");
+        for (i, choice) in self.choices.iter().enumerate() {
+            let cursor = if self.cursor == i { ">" } else { " " };
+            let checked = if self.selected.contains(&i) { "x" } else { " " };
+            s.push_str(&format!("{cursor} [{checked}] {choice}\n"));
+        }
+        s.push_str("\nPress q to quit.\n");
+        View::new(&s)
     }
 }
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let model = Model {
+        choices: vec![
+            "Buy carrots".to_string(),
+            "Buy celery".to_string(),
+            "Buy kohlrabi".to_string(),
+        ],
+        cursor: 0,
+        selected: HashSet::new(),
+    };
+    let program = Program::new(model);
+    program.run()?;
+    Ok(())
+}
 ```
+
+Save that to `main.rs` and run it with `cargo run`:
+
+- **j/k** or the arrow keys move the cursor up and down.
+- **enter** or **space** toggles an item on and off the list.
+- **q** or **ctrl+c** quits.
+
+That's it — the three methods of the [Elm Architecture][elm] are all you need. The `Msg` type is a trait object, so your `update` downcasts the messages you care about (keys, mouse, window size, timers, and any custom messages you define) and ignores the rest. `View` is a declarative description of the frame — plain text plus optional cursor, alt-screen, and mouse-mode settings — which the renderer diffs against the previous frame to produce minimal terminal output.
+
+From here, the best next step is to browse the [examples][examples] directory — every upstream Bubble Tea example is ported there and each one is verified byte-for-byte against the Go build by the E2E harness. For common UI components such as text inputs, spinners and lists, see [charming-bubbles][bubbles].
 
 ## License
 

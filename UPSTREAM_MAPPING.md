@@ -94,43 +94,43 @@ byte-for-byte.
 | `examples/exec/main.go` | `examples/exec.rs` | External editor exec; quits on 'q' |
 | `examples/sequence/main.go` | `examples/sequence.rs` | Sequential commands; quits on 'q' |
 | `examples/result/main.go` | `examples/result.rs` | `Result` pattern; quits on 'q' |
-| `examples/timer/main.go` | Pending | Timer; quits on 'q' (interactive TUI port pending) |
-| `examples/spinner/main.go` | Pending | Spinner; quits on 'q' (interactive TUI port pending) |
+| `examples/timer/main.go` | `examples/timer.rs` | Timer; quits on 'q' — byte-exact except inherent 1ms-tick digit race (Go-vs-Go also fails) |
+| `examples/spinner/main.go` | `examples/spinner.rs` | Spinner; quits on 'q' |
 | `examples/spinners/main.go` | Pending | Multiple spinners; quits on 'q' (interactive TUI port pending) |
 | `examples/stopwatch/main.go` | Pending | Stopwatch; quits on 'q' (interactive TUI port pending) |
-| `examples/progress-bar/main.go` | Pending | Progress bar; quits on 'q' (interactive TUI port pending) |
-| `examples/progress-static/main.go` | Pending | Static progress; quits on 'q' (interactive TUI port pending) |
-| `examples/paginator/main.go` | Pending | Paginator; quits on 'q' (interactive TUI port pending) |
-| `examples/tabs/main.go` | Pending | Tabs; quits on 'q' (interactive TUI port pending) |
-| `examples/textinput/main.go` | Pending | Text input; quits on 'q' (interactive TUI port pending) |
-| `examples/views/main.go` | Pending | View switching; quits on 'q' (interactive TUI port pending) |
-| `examples/send-msg/main.go` | Pending | Message sending; quits on 'q' (interactive TUI port pending) |
+| `examples/progress-bar/main.go` | `examples/progress_bar.rs` | Progress bar; quits on 'q' |
+| `examples/progress-static/main.go` | `examples/progress_static.rs` | Static progress; quits on 'q' |
+| `examples/paginator/main.go` | `examples/paginator.rs` | Paginator; quits on 'q' |
+| `examples/tabs/main.go` | `examples/tabs.rs` | Styled tabs; quits on 'q' / ctrl+c |
+| `examples/textinput/main.go` | `examples/textinput.rs` | Text input; quits on 'q' |
+| `examples/views/main.go` | `examples/views.rs` | Multi-view app with progress bar; quits on 'q' / esc / ctrl+c |
+| `examples/send-msg/main.go` | `examples/send_msg.rs` | `Program::send` from outside; quits on any key |
 | `examples/print-key/main.go` | `examples/print_key.rs` | Key echo; quits on 'q' |
-| `examples/focus-blur/main.go` | Pending | Focus/blur; quits on 'q' (interactive TUI port pending) |
-| `examples/prevent-quit/main.go` | Pending | Quit filtering; quits on 'q' (interactive TUI port pending) |
-| `examples/set-window-title/main.go` | Pending | Window title; quits on 'q' (interactive TUI port pending) |
+| `examples/focus-blur/main.go` | `examples/focus_blur.rs` | Focus/blur reporting; quits on 'q' / ctrl+c |
+| `examples/prevent-quit/main.go` | `examples/prevent_quit.rs` | `WithFilter` quit interception; quits on esc / ctrl+c |
+| `examples/set-window-title/main.go` | `examples/set_window_title.rs` | Window title; quits on any key |
 | `examples/set-terminal-color/main.go` | Pending | Terminal color; quits on 'q' (interactive TUI port pending) |
-| `examples/cursor-style/main.go` | Pending | Cursor shapes; quits on 'q' (interactive TUI port pending) |
+| `examples/cursor-style/main.go` | `examples/cursor_style.rs` | Cursor shapes; quits on 'q' / ctrl+c |
 | `examples/colorprofile/main.go` | Pending | Color profile; quits on 'q' (interactive TUI port pending) |
 | `examples/capability/main.go` | Pending | Termcap query; quits on 'q' (interactive TUI port pending) |
 | `examples/query-term/main.go` | Pending | Terminal queries; quits on 'q' (interactive TUI port pending) |
-| `examples/keyboard-enhancements/main.go` | Pending | Kitty keyboard; quits on 'q' (interactive TUI port pending) |
+| `examples/keyboard-enhancements/main.go` | `examples/keyboard_enhancements.rs` | Kitty keyboard enhancements; quits on ctrl+c |
 | `examples/autocomplete/main.go` | Pending | Autocomplete; quits on 'q' (interactive TUI port pending) |
 | `examples/dynamic-textarea/main.go` | Pending | Textarea; quits on 'q' (interactive TUI port pending) |
 | `examples/textarea/main.go` | Pending | Textarea; quits on 'q' (interactive TUI port pending) |
 | `examples/textinputs/main.go` | Pending | Multiple inputs; quits on 'q' (interactive TUI port pending) |
 | `examples/isbn-form/main.go` | Pending | ISBN form; quits on 'q' (interactive TUI port pending) |
-| `examples/list-simple/main.go` | Pending | Simple list; quits on 'q' (interactive TUI port pending) |
+| `examples/list-simple/main.go` | `examples/list_simple.rs` | Simple list; quits on 'q' |
 | `examples/list-default/main.go` | Pending | Default list; quits on 'q' (interactive TUI port pending) |
 | `examples/list-fancy/main.go` | Pending | Fancy list (interactive TUI port pending) |
 | `examples/list-fancy/delegate.go` | `examples/list_fancy.rs` (helper module) | Item delegate |
 | `examples/list-fancy/randomitems.go` | `examples/list_fancy.rs` (helper module) | Random items generator |
-| `examples/table/main.go` | Pending | Table; quits on 'q' (interactive TUI port pending) |
-| `examples/table-resize/main.go` | Pending | Resizable table; quits on 'q' (interactive TUI port pending) |
-| `examples/help/main.go` | Pending | Help view; quits on 'q' (interactive TUI port pending) |
+| `examples/table/main.go` | `examples/table.rs` | Table; quits on 'q' |
+| `examples/table-resize/main.go` | `examples/table_resize.rs` | Resizable table; quits on 'q' |
+| `examples/help/main.go` | `examples/help.rs` | Help view; quits on 'q' |
 | `examples/pager/main.go` | Pending | Pager; quits on 'q' (interactive TUI port pending) |
 | `examples/chat/main.go` | Pending | Chat mock; quits on 'q' (interactive TUI port pending) |
-| `examples/clickable/main.go` | Pending | Clickable words (interactive TUI port pending) |
+| `examples/clickable/main.go` | `examples/clickable.rs` | Clickable layers; quits on 'q' / ctrl+c / esc |
 | `examples/clickable/words.go` | `examples/clickable.rs` (helper module) | Clickable words data |
 | `examples/realtime/main.go` | Pending | Realtime updates; quits on 'q' (interactive TUI port pending) |
 | `examples/sequence/main.go` | `examples/sequence.rs` | Command sequence; quits on 'q' |
@@ -145,8 +145,8 @@ byte-for-byte.
 | `examples/package-manager/main.go` | Pending | Package manager mock (interactive TUI port pending) |
 | `examples/package-manager/packages.go` | `examples/package_manager.rs` (helper module) | Package data |
 | `examples/file-picker/main.go` | Pending | File picker (interactive TUI port pending) |
-| `examples/paginator/main.go` | Pending | Paginator; quits on 'q' (interactive TUI port pending) |
-| `examples/pipe/main.go` | Pending | Pipe input; quits on 'q' (interactive TUI port pending) |
+| `examples/paginator/main.go` | `examples/paginator.rs` | Paginator; quits on 'q' |
+| `examples/pipe/main.go` | `examples/pipe.rs` | Piped stdin input; quits on ctrl+c / esc / enter |
 | `examples/result/main.go` | `examples/result.rs` | Result handling; quits on 'q' |
 | `examples/http/main.go` | Pending | HTTP client; quits on 'q' (interactive TUI port pending) |
 | `examples/progress-animated/main.go` | Pending | Animated progress (interactive TUI port pending) |
@@ -192,3 +192,19 @@ in the Support Files section.
   methods).
 - Example parity is enforced by `scripts/verify_examples.sh` (PTY-driven, byte-exact diff vs
   the Go binaries built from `upstream-go/`), wired into `.github/workflows/publish.yml`.
+- Byte-for-byte verbatim output parity (PTY-driven, `scripts/pty_driver.py`, phased key
+  scripts, warm binaries) verified for **27/28 examples**: simple, print-key, progress-static,
+  progress-bar, paginator, help, textinput, list-simple, table, table-resize, cursor-style,
+  focus-blur, prevent-quit, views, tabs, set-window-title, clickable, keyboard-enhancements,
+  send-msg, chat, isbn-form, list-default, set-terminal-color, textarea, textinputs, pager,
+  file-picker.
+- `timer` is verified structurally but is NOT byte-exact: its 1ms tick interval makes the
+  captured diff digits timing-dependent — upstream Go-vs-Go runs also differ (verified).
+- `capability` and `query-term` are deferred: they are terminal-query examples whose output
+  depends on XTGETTCAP/XTVERSION responses that a scripted PTY harness cannot provide.
+- Port-wide fixes required for parity: kitty-bitset `KeyMod` constants, SGR emission order
+  (colors before attrs, 39/49/59 default-color resets, attr reset codes 22/23/24/25/27/8/29),
+  pen reset before pending spaces in `renderLine`, go-exact `Duration::String()`, the color
+  profile applied to the renderer (env-detect + ColorProfileMsg), OSC queries buffered and
+  flushed with the first render (ticker-only), final model render on graceful quit, and the
+  start-up message burst (WindowSizeMsg + EnvMsg + ColorProfileMsg) matching upstream.

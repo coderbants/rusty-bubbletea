@@ -9,6 +9,12 @@
 #   2. the Rust build's per-phase screens and exit are 1:1 identical to Go.
 #
 # Usage: scripts/e2e_examples.sh [example_name ...]   (no args: all specs)
+#
+# NOTE: the `pager` example has no spec. Upstream Go's viewport positions
+# lines after wide (CJK) content with backspaces, landing the gutter at a
+# different column than the Rust port's absolute positioning; the byte-level
+# parity is therefore not reproducible between machines. The pager is still
+# covered by verify_examples.sh.
 
 set -u
 cd "$(dirname "$0")/.."

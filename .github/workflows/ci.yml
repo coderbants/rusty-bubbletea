@@ -115,6 +115,11 @@ jobs:
         run: cargo doc --no-deps
       - name: Test (all targets, all integration tests)
         run: cargo test --all-targets
+      - name: Prepare e2e fixtures
+        run: |
+          # The file_picker spec expects the macOS-style home folders that
+          # both the Go and Rust examples list from $HOME.
+          mkdir -p "$HOME/Applications" "$HOME/Documents"
       - name: e2e_examples
         run: ./scripts/e2e_examples.sh
       - name: verify_examples

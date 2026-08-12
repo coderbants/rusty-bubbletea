@@ -50,7 +50,9 @@ for name in $SPECS; do
     continue
   fi
 
-  timeout 40 python3 scripts/e2e.py --cmd "$GOBIN/$name" --spec "$spec" --out "$TMP/out/go.$name.json" 2>/dev/null
+  # The Go examples resolve fixtures (e.g. the pager's artichoke.md) relative
+  # to their source directory, so run each from there.
+  timeout 40 python3 scripts/e2e.py --cmd bash --args=-c --args="cd upstream-go/examples/$godir && exec \"$GOBIN/$name\"" --spec "$spec" --out "$TMP/out/go.$name.json" 2>/dev/null
   timeout 40 python3 scripts/e2e.py --cmd "target/debug/$rsbin" --spec "$spec" --out "$TMP/out/rs.$name.json" 2>/dev/null
 
   python3 - "$spec" "$TMP/out/go.$name.json" "$TMP/out/rs.$name.json" << 'PYEOF'

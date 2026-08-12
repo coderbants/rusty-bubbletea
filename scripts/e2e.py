@@ -382,12 +382,15 @@ def run_spec(cmd, args, spec, gap=0.4, timeout=20.0):
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--cmd", required=True)
-    p.add_argument("--args", nargs="*", default=[])
+    p.add_argument("--args", nargs="*", action="append", default=[])
     p.add_argument("--spec", required=True)
     p.add_argument("--out", required=True)
     args = p.parse_args()
     spec = json.load(open(args.spec))
-    result = run_spec(args.cmd, args.args, spec)
+    # Repeated `--args` occurrences (e.g. `--args=-c --args=SCRIPT`) are each
+    # a separate group; flatten them into the child argv in order.
+    child_args = [a for group in args.args for a in group]
+    result = run_spec(args.cmd, child_args, spec)
     with open(args.out, "w") as f:
         json.dump(result, f)
 

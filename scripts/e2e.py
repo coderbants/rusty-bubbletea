@@ -355,6 +355,11 @@ def run_spec(cmd, args, spec, gap=0.4, timeout=20.0):
                 try:
                     os.read(master, 8192)
                 except OSError:
+                    # EIO: the child exited and closed the pty; reap it now.
+                    wpid, st = os.waitpid(pid, os.WNOHANG)
+                    if wpid == pid:
+                        exited = True
+                        status = st
                     break
         if not exited:
             try:
@@ -374,13 +379,16 @@ def run_spec(cmd, args, spec, gap=0.4, timeout=20.0):
             os.waitpid(pid, 0)
         except ChildProcessError:
             pass
-    open("/tmp/e2e_last_raw.bin", "wb").write(bytes(out))
+    raw = bytes(out)
+    open("/tmp/e2e_last_raw.bin", "wb").write(raw)
+    cjk = raw.find("你好".encode("utf-8"))
     return {
         "screens": screens,
         "exited": exited,
         "exit_ok": exited and (status == 0 or os.WIFSIGNALED(status) is False),
         "exit_status": status,
-        "raw_tail": bytes(out)[-600:].decode("utf-8", "replace"),
+        "raw_tail": raw[-600:].decode("utf-8", "replace"),
+        "raw_cjk": (raw[max(0, cjk - 200):cjk + 200].decode("utf-8", "replace") if cjk >= 0 else ""),
     }
 
 

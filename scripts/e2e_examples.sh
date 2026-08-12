@@ -99,6 +99,8 @@ if go["screens"] != rs["screens"]:
             detail += "; RS_TEXT=" + repr(rtext[:300])
             detail += "; GO_RAW=" + repr(go.get("raw_tail", "")[-200:])
             detail += "; RS_RAW=" + repr(rs.get("raw_tail", "")[-200:])
+            detail += "; GO_CJK=" + repr(go.get("raw_cjk", ""))
+            detail += "; RS_CJK=" + repr(rs.get("raw_cjk", ""))
             break
     fails.append(detail)
 if go["exited"] != rs["exited"]:

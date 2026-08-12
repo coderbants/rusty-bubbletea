@@ -97,6 +97,8 @@ if go["screens"] != rs["screens"]:
                               for y in range(min(r["rows"], 14)))
             detail += "; GO_TEXT=" + repr(gtext[:300])
             detail += "; RS_TEXT=" + repr(rtext[:300])
+            detail += "; GO_RAW=" + repr(go.get("raw_tail", "")[-200:])
+            detail += "; RS_RAW=" + repr(rs.get("raw_tail", "")[-200:])
             break
     fails.append(detail)
 if go["exited"] != rs["exited"]:

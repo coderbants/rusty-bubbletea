@@ -380,6 +380,7 @@ def run_spec(cmd, args, spec, gap=0.4, timeout=20.0):
         "exited": exited,
         "exit_ok": exited and (status == 0 or os.WIFSIGNALED(status) is False),
         "exit_status": status,
+        "raw_tail": bytes(out)[-600:].decode("utf-8", "replace"),
     }
 
 

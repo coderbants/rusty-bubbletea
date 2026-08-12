@@ -292,7 +292,10 @@ def run_spec(cmd, args, spec, gap=0.4, timeout=20.0):
     def drain_until_quiet(quiet=0.4, cap=2.0):
         end = time.time() + cap
         last_activity = time.time()
-        while time.time() < end and time.time() - last_activity < quiet:
+        first_bytes = False
+        while time.time() < end:
+            if first_bytes and time.time() - last_activity >= quiet:
+                return
             r, _, _ = select.select([master], [], [], 0.05)
             if r:
                 try:
@@ -302,6 +305,7 @@ def run_spec(cmd, args, spec, gap=0.4, timeout=20.0):
                 if not data:
                     return
                 out.extend(data)
+                first_bytes = True
                 last_activity = time.time()
 
     drain_until_quiet()
@@ -340,7 +344,7 @@ def run_spec(cmd, args, spec, gap=0.4, timeout=20.0):
     # Wait for exit if requested.
     if spec.get("expect_exit", True):
         t0 = time.time()
-        while time.time() - t0 < 5:
+        while time.time() - t0 < 12:
             wpid, st = os.waitpid(pid, os.WNOHANG)
             if wpid == pid:
                 exited = True

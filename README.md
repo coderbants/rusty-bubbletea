@@ -2,7 +2,6 @@
     <a href="rusty_bubbletea.png"><img src="rusty_bubbletea.png" width="313" alt="Rusty Bubble Tea"></a><br>
     <a href="https://crates.io/crates/rusty-bubbletea"><img src="https://img.shields.io/crates/v/rusty-bubbletea.svg" alt="crates.io"></a>
     <a href="https://github.com/coderbants/rusty-bubbletea/actions"><img src="https://github.com/coderbants/rusty-bubbletea/actions/workflows/ci.yml/badge.svg" alt="Build Status"></a>
-    <a href="https://www.phorm.ai/query?projectId=a0e324b6-b706-4546-b951-6671ea60c13f"><img src="https://stuff.charm.sh/misc/phorm-badge.svg" alt="phorm.ai"></a>
 </p>
 
 # Rusty Bubble Tea (`rusty-bubbletea`)

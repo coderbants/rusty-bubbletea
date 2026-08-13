@@ -11,7 +11,7 @@
 
 **Version policy: the crate version and every release tag must equal the tracked upstream version exactly — never ahead, never behind** (enforced by `scripts/verify_upstream_version.sh` in CI and on every release).
 
-**1:1 behavioural, visual and license parity**: This project holds a hard goal of the same messages, commands, and rendering output, favouring fidelity to upstream semantics over Rust-native rewrites whenever the two would diverge (i.e. consistency with upstream is favoured over idiomatic Rust, which is intended to make keeping the project up-to-date easier over time).
+**1:1 behavioural, visual and license parity**: This project holds a hard goal of producing the same messages, commands, and rendering output, favouring fidelity to upstream semantics over Rust-native rewrites whenever the two would diverge (i.e. consistency with upstream is favoured over idiomatic Rust, which is intended to make keeping the project up-to-date easier over time).
 
 It's part of the Charming port family of the Bubble Tea ecosystem and builds on [charming-ultraviolet](https://github.com/coderbants/charming-ultraviolet) (terminal renderer & input), [charming-lipgloss](https://github.com/coderbants/charming-lipgloss) (styling), [charming-x-ansi](https://github.com/coderbants/charming-x-ansi) (ANSI primitives), and [charming-colorprofile](https://github.com/coderbants/charming-colorprofile) — with UI components available in [charming-bubbles](https://github.com/coderbants/charming-bubbles).
 

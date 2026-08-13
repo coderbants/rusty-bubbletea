@@ -11,6 +11,15 @@
 # (first frame + diff structure) instead.
 
 cd "$(dirname "$0")/.."
+# Shared machine-wide Cargo cache (see scripts/cargo-env.sh): the registry
+# cache, final artifacts, and intermediate state live in ~/.cache/cargo and
+# are reused by every Rust repository on this machine.
+. scripts/cargo-env.sh || exit 1
+configure_shared_cargo_cache_environment || {
+  echo "ERROR: failed to configure the shared Cargo cache environment" >&2
+  exit 1
+}
+
 export TERM=xterm-256color
 export LANG=C
 
@@ -86,10 +95,10 @@ echo "$PAIRS" | while IFS='|' read -r name keys dly; do
 
   # Warm both binaries (cold starts skew the ticker-vs-quit race).
   timeout 20 python3 scripts/pty_driver.py --cmd "$GOBIN/$name" --keys "$keys" --delay "$dly" --settle 0.5 > /dev/null 2>&1
-  timeout 20 python3 scripts/pty_driver.py --cmd "target/debug/examples/$(echo "$name" | tr - _)" --keys "$keys" --delay "$dly" --settle 0.5 > /dev/null 2>&1
+  timeout 20 python3 scripts/pty_driver.py --cmd "$(cargo_target_dir)/debug/examples/$(echo "$name" | tr - _)" --keys "$keys" --delay "$dly" --settle 0.5 > /dev/null 2>&1
 
   timeout 20 python3 scripts/pty_driver.py --cmd "$GOBIN/$name" --keys "$keys" --delay "$dly" --settle 1.0 --gap 0.4 > "$TMP/go.out" 2>/dev/null
-  timeout 20 python3 scripts/pty_driver.py --cmd "target/debug/examples/$(echo "$name" | tr - _)" --keys "$keys" --delay "$dly" --settle 1.0 --gap 0.4 > "$TMP/rs.out" 2>/dev/null
+  timeout 20 python3 scripts/pty_driver.py --cmd "$(cargo_target_dir)/debug/examples/$(echo "$name" | tr - _)" --keys "$keys" --delay "$dly" --settle 1.0 --gap 0.4 > "$TMP/rs.out" 2>/dev/null
 
   if cmp -s "$TMP/go.out" "$TMP/rs.out"; then
     echo "PASS  $name"
@@ -98,9 +107,9 @@ echo "$PAIRS" | while IFS='|' read -r name keys dly; do
     # loaded runners); retry once before failing the sweep.
     echo "RETRY $name (flaky harness?)"
     timeout 20 python3 scripts/pty_driver.py --cmd "$GOBIN/$name" --keys "$keys" --delay "$dly" --settle 0.5 > /dev/null 2>&1
-    timeout 20 python3 scripts/pty_driver.py --cmd "target/debug/examples/$(echo "$name" | tr - _)" --keys "$keys" --delay "$dly" --settle 0.5 > /dev/null 2>&1
+    timeout 20 python3 scripts/pty_driver.py --cmd "$(cargo_target_dir)/debug/examples/$(echo "$name" | tr - _)" --keys "$keys" --delay "$dly" --settle 0.5 > /dev/null 2>&1
     timeout 20 python3 scripts/pty_driver.py --cmd "$GOBIN/$name" --keys "$keys" --delay "$dly" --settle 1.0 --gap 0.4 > "$TMP/go.out" 2>/dev/null
-    timeout 20 python3 scripts/pty_driver.py --cmd "target/debug/examples/$(echo "$name" | tr - _)" --keys "$keys" --delay "$dly" --settle 1.0 --gap 0.4 > "$TMP/rs.out" 2>/dev/null
+    timeout 20 python3 scripts/pty_driver.py --cmd "$(cargo_target_dir)/debug/examples/$(echo "$name" | tr - _)" --keys "$keys" --delay "$dly" --settle 1.0 --gap 0.4 > "$TMP/rs.out" 2>/dev/null
     if cmp -s "$TMP/go.out" "$TMP/rs.out"; then
       echo "PASS  $name (on retry)"
     else

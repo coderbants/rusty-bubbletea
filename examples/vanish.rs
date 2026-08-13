@@ -3,8 +3,8 @@
 //!
 //! A program that quits and vanishes without a trace when any key is pressed.
 
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::{quit, Cmd, KeyPressMsg, Msg, Program, View};
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::{quit, Cmd, KeyPressMsg, Msg, Program, View};
 
 /// The model is a simple boolean that records whether a key has been pressed,
 /// mirroring `type model bool`.

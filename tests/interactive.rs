@@ -7,7 +7,7 @@
 //! interactive behavior (typing, navigating, mouse clicks) that a byte-level
 //! key-sweep cannot.
 
-use charming_testkit::PtySession;
+use rusty_testkit::PtySession;
 
 /// The package's Cargo target directory. `cargo metadata` is authoritative:
 /// it honours `CARGO_TARGET_DIR` from the shared machine-wide Cargo cache
@@ -158,7 +158,7 @@ fn mouse_click_updates_last_event() {
     pty.wait_for_text("Do mouse stuff", 5000).expect("shown");
     std::thread::sleep(std::time::Duration::from_millis(300));
     // Click at cell (20, 5): SGR protocol uses 1-based coordinates.
-    pty.send(&charming_testkit::keys::mouse_click(20, 5))
+    pty.send(&rusty_testkit::keys::mouse_click(20, 5))
         .expect("click");
     pty.wait_until(5000, |s| s.contains("Y: 4) left"))
         .expect("event recorded");

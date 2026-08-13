@@ -5,10 +5,10 @@
 //! it. All settings will be cleared on exit. Note that many terminals don't
 //! support this.
 
-use charming_bubbles::textinput;
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::{quit, Cmd, KeyPressMsg, Msg, Program, View};
-use charming_lipgloss::new_style;
+use rusty_bubbles::textinput;
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::{quit, Cmd, KeyPressMsg, Msg, Program, View};
+use rusty_lipgloss::new_style;
 
 /// ColorType is the kind of color to set.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -41,9 +41,9 @@ struct Model {
     state: State,
     choice_index: usize,
     err: Option<String>,
-    fg: Option<charming_bubbletea::color::Color>,
-    bg: Option<charming_bubbletea::color::Color>,
-    cc: Option<charming_bubbletea::color::Color>,
+    fg: Option<rusty_bubbletea::color::Color>,
+    bg: Option<rusty_bubbletea::color::Color>,
+    cc: Option<rusty_bubbletea::color::Color>,
 }
 
 impl ModelTrait for Model {
@@ -194,7 +194,7 @@ impl ModelTrait for Model {
 
 /// ParseHexColor parses a hex color like `#ff00ff` or `ff00ff`, mirroring the
 /// upstream `colorful.Hex`.
-fn parse_hex_color(s: &str) -> Result<charming_bubbletea::color::Color, String> {
+fn parse_hex_color(s: &str) -> Result<rusty_bubbletea::color::Color, String> {
     let s = s.trim();
     let s = s.strip_prefix('#').unwrap_or(s);
     if s.len() != 6 {
@@ -203,7 +203,7 @@ fn parse_hex_color(s: &str) -> Result<charming_bubbletea::color::Color, String> 
     let r = u8::from_str_radix(&s[0..2], 16).map_err(|_| "invalid color".to_string())?;
     let g = u8::from_str_radix(&s[2..4], 16).map_err(|_| "invalid color".to_string())?;
     let b = u8::from_str_radix(&s[4..6], 16).map_err(|_| "invalid color".to_string())?;
-    Ok(charming_x_ansi::color::RGBColor { r, g, b })
+    Ok(rusty_x_ansi::color::RGBColor { r, g, b })
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

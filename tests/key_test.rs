@@ -1,4 +1,4 @@
-use charming_bubbletea::{Key, KeyMod, KeyPressMsg};
+use rusty_bubbletea::{Key, KeyMod, KeyPressMsg};
 
 #[test]
 fn test_v2_key_press_msg() {

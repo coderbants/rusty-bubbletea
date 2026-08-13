@@ -12,12 +12,12 @@
 
 use std::time::Duration;
 
-use charming_bubbles::progress;
-use charming_bubbletea::commands;
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::screen::WindowSizeMsg;
-use charming_bubbletea::{quit, Cmd, KeyPressMsg, Msg, Program, View};
-use charming_lipgloss::{Color, Style};
+use rusty_bubbles::progress;
+use rusty_bubbletea::commands;
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::screen::WindowSizeMsg;
+use rusty_bubbletea::{quit, Cmd, KeyPressMsg, Msg, Program, View};
+use rusty_lipgloss::{Color, Style};
 
 const PADDING: usize = 2;
 const MAX_WIDTH: usize = 80;

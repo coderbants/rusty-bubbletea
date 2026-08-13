@@ -8,10 +8,10 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, SystemTime};
 
-use charming_bubbles::spinner;
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::{quit, Cmd, KeyPressMsg, Msg, Program, View};
-use charming_lipgloss::{new_style, Color, Style};
+use rusty_bubbles::spinner;
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::{quit, Cmd, KeyPressMsg, Msg, Program, View};
+use rusty_lipgloss::{new_style, Color, Style};
 
 /// The number of most recent results to keep around.
 const NUM_LAST_RESULTS: usize = 5;

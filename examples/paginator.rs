@@ -4,15 +4,15 @@
 //! A simple program demonstrating the paginator component from the Bubbles
 //! component library.
 
-use charming_bubbles::paginator::{self, Type};
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::{
+use rusty_bubbles::paginator::{self, Type};
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::{
     quit, request_background_color, BackgroundColorMsg, Cmd, KeyPressMsg, Msg, Program, View,
 };
-use charming_lipgloss::{Color, Style};
+use rusty_lipgloss::{Color, Style};
 
 fn new_styles(bg_is_dark: bool) -> (String, String) {
-    let light_dark = charming_lipgloss::color::light_dark(bg_is_dark);
+    let light_dark = rusty_lipgloss::color::light_dark(bg_is_dark);
 
     let active_dot = Style::new()
         .foreground_color(light_dark(Color::parse("235"), Color::parse("252")))

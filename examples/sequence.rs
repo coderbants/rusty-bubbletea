@@ -5,7 +5,7 @@
 //! one at a time in order; commands in a batch run concurrently. A tree of
 //! both prints labelled lines with sleeps in between, then quits.
 
-use charming_bubbletea::{
+use rusty_bubbletea::{
     batch, print_ln, quit, sequence, Cmd, KeyPressMsg, Model, Msg, Program, View,
 };
 use std::time::Duration;

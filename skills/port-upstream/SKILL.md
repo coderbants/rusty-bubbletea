@@ -1,6 +1,6 @@
 # Port Upstream Skill & Workflow
 
-This document defines the 4-phase synchronization workflow for maintaining cleanroom parity between `charming-bubbletea` and upstream `charmbracelet/bubbletea`.
+This document defines the 4-phase synchronization workflow for maintaining cleanroom parity between `rusty-bubbletea` and upstream `charmbracelet/bubbletea`.
 
 ## Upstream Target Repository
 - Repository: `charmbracelet/bubbletea`

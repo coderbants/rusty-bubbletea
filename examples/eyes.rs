@@ -11,10 +11,10 @@
 
 use std::time::{Duration, SystemTime};
 
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::screen::WindowSizeMsg;
-use charming_bubbletea::{quit, tick, Cmd, KeyPressMsg, Msg, Program, View};
-use charming_lipgloss::{new_style, Color};
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::screen::WindowSizeMsg;
+use rusty_bubbletea::{quit, tick, Cmd, KeyPressMsg, Msg, Program, View};
+use rusty_lipgloss::{new_style, Color};
 
 // Eye dimensions (corresponding to original EYE_WIDTH and EYE_HEIGHT)
 const EYE_WIDTH: isize = 15;

@@ -15,12 +15,12 @@ use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use charming_bubbles::progress;
-use charming_bubbletea::commands;
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::screen::WindowSizeMsg;
-use charming_bubbletea::{batch, quit, Cmd, KeyPressMsg, Msg, Program, View};
-use charming_lipgloss::{Color, Style};
+use rusty_bubbles::progress;
+use rusty_bubbletea::commands;
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::screen::WindowSizeMsg;
+use rusty_bubbletea::{batch, quit, Cmd, KeyPressMsg, Msg, Program, View};
+use rusty_lipgloss::{Color, Style};
 
 fn help_style() -> Style {
     Style::new().foreground_color(Color::parse("#626262"))
@@ -133,7 +133,7 @@ fn get_response(url: &str) -> Result<Response, Box<dyn std::error::Error>> {
 
     let mut stream = TcpStream::connect(host_port)?;
     let request = format!(
-        "GET {} HTTP/1.1\r\nHost: {}\r\nConnection: close\r\nUser-Agent: charming-bubbletea-progress-download\r\n\r\n",
+        "GET {} HTTP/1.1\r\nHost: {}\r\nConnection: close\r\nUser-Agent: rusty-bubbletea-progress-download\r\n\r\n",
         path, host_port
     );
     stream.write_all(request.as_bytes())?;

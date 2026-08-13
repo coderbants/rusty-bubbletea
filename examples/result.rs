@@ -4,7 +4,7 @@
 //! A simple choice menu: navigate with up/down (or k/j), press enter to
 //! select, and the selection is printed after the program exits.
 
-use charming_bubbletea::{quit, Cmd, KeyPressMsg, Model, Msg, Program, View};
+use rusty_bubbletea::{quit, Cmd, KeyPressMsg, Model, Msg, Program, View};
 
 const CHOICES: [&str; 3] = ["Taro", "Coffee", "Lychee"];
 

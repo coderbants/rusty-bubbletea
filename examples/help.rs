@@ -4,12 +4,12 @@
 //! A program demonstrating the help component, with a custom keymap and
 //! short/full help views.
 
-use charming_bubbles::help::{self, KeyMap as KeyMapTrait};
-use charming_bubbles::key::{self, Binding};
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::screen::WindowSizeMsg;
-use charming_bubbletea::{quit, Cmd, KeyPressMsg, Msg, Program, View};
-use charming_lipgloss::{Color, Style};
+use rusty_bubbles::help::{self, KeyMap as KeyMapTrait};
+use rusty_bubbles::key::{self, Binding};
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::screen::WindowSizeMsg;
+use rusty_bubbletea::{quit, Cmd, KeyPressMsg, Msg, Program, View};
+use rusty_lipgloss::{Color, Style};
 
 /// KeyMap defines a set of keybindings. To work for help it must satisfy
 /// the `help::KeyMap` trait.
@@ -149,7 +149,7 @@ impl ModelTrait for Model {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _logger = if std::env::var("HELP_DEBUG").is_ok() {
-        match charming_bubbletea::log_to_file("debug.log", "help") {
+        match rusty_bubbletea::log_to_file("debug.log", "help") {
             Ok(f) => Some(f),
             Err(err) => {
                 eprintln!("Couldn't open a file for logging: {}", err);

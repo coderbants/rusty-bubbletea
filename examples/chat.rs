@@ -5,14 +5,14 @@
 //! component library: a chat window with a message log viewport and a
 //! textarea input.
 
-use charming_bubbles::cursor::BlinkMsg;
-use charming_bubbles::textarea;
-use charming_bubbles::viewport;
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::screen::WindowSizeMsg;
-use charming_bubbletea::{quit, Cmd, KeyPressMsg, Msg, Program, View};
-use charming_lipgloss::new_style;
-use charming_lipgloss::{Color, Style};
+use rusty_bubbles::cursor::BlinkMsg;
+use rusty_bubbles::textarea;
+use rusty_bubbles::viewport;
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::screen::WindowSizeMsg;
+use rusty_bubbletea::{quit, Cmd, KeyPressMsg, Msg, Program, View};
+use rusty_lipgloss::new_style;
+use rusty_lipgloss::{Color, Style};
 
 struct Model {
     viewport: viewport::Model,
@@ -115,7 +115,7 @@ impl ModelTrait for Model {
         let viewport_view = self.viewport.view();
         let mut v = View::new(&(viewport_view.clone() + "\n" + &self.textarea.view()));
         if let Some(mut c) = self.textarea.cursor() {
-            c.position.y += charming_lipgloss::size::height(&viewport_view);
+            c.position.y += rusty_lipgloss::size::height(&viewport_view);
             v.cursor = Some(c);
         }
         v.alt_screen = true;

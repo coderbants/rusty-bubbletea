@@ -4,7 +4,7 @@
 //! A simple program that opens the alternate screen buffer and displays mouse
 //! coordinates and events.
 
-use charming_bubbletea::{
+use rusty_bubbletea::{
     print_ln, quit, Cmd, KeyPressMsg, Model, MouseButton, MouseClickMsg, MouseMode, Msg, Program,
     View,
 };

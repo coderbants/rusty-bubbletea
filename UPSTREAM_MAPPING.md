@@ -1,4 +1,4 @@
-# Upstream Go File Mapping: `charming-bubbletea`
+# Upstream Go File Mapping: `rusty-bubbletea`
 
 Target Upstream Tag: `charm.land/bubbletea/v2@v2.0.8`
 
@@ -13,7 +13,7 @@ upstream tag `v2.0.8`, checked out locally in `upstream-go/` (gitignored).
 | `tea.go` | `src/lib.rs`, `src/view.rs`, `src/program.rs` | Core Elm architecture: `Model`, `Msg`, `Cmd`, `Program`, `View` |
 | `tea_test.go` | `tests/tea_test.rs` | Core program unit tests |
 | `clipboard.go` | `src/clipboard.rs` | OSC52 clipboard ops (`set_clipboard`, `read_clipboard`, `ClipboardMsg`) |
-| `color.go` | `src/color.rs` — **Refactored** | Response messages wrap `charming-ultraviolet` color events; `is_dark` via the upstream HSL logic | Color requests and messages (`request_background_color`, `BackgroundColorMsg`, …) |
+| `color.go` | `src/color.rs` — **Refactored** | Response messages wrap `rusty-ultraviolet` color events; `is_dark` via the upstream HSL logic | Color requests and messages (`request_background_color`, `BackgroundColorMsg`, …) |
 | `commands.go` | `src/commands.rs` | Built-in commands (`quit`, `batch`, `sequence`, `tick`, `every`, `request_window_size`) |
 | `commands_test.go` | `tests/commands_test.rs` | Command suite tests |
 | `cursed_renderer.go` | `src/cursed_renderer.rs` | CursedRenderer: declarative view frames, ANSI diffing, unmanaged lines |
@@ -154,8 +154,8 @@ byte-for-byte.
 | `examples/progress-download/tui.go` | `examples/progress_download.rs` (helper module) | Download TUI model |
 | `examples/split-editors/main.go` | Pending | Split editors; quits on 'q' (interactive TUI port pending) |
 | `examples/tui-daemon-combo/main.go` | Pending | TUI/daemon combo (interactive TUI port pending) |
-| `examples/glamour/main.go` | Documented; requires glamour | Markdown rendering; needs `charming-glamour` (out of library dependency tree) | — **Pending (interactive TUI port)**
-| `examples/ssh/main.go` | Documented; SSH server program | Requires an SSH server runtime (`charming-wish`), out of scope for this crate | — **Pending (interactive TUI port)**
+| `examples/glamour/main.go` | Documented; requires glamour | Markdown rendering; needs `rusty-glamour` (out of library dependency tree) | — **Pending (interactive TUI port)**
+| `examples/ssh/main.go` | Documented; SSH server program | Requires an SSH server runtime (`rusty-wish`), out of scope for this crate | — **Pending (interactive TUI port)**
 | `examples/suspend/main.go` | Pending | Suspend/resume; resumes on 'r' (interactive TUI port pending) |
 | `tutorials/basics/main.go` | `examples/tutorial_basics.rs` | Tutorial: counter; quits on 'q' |
 | `tutorials/commands/main.go` | `examples/tutorial_commands.rs` | Tutorial: commands; quits on 'q' |

@@ -17,8 +17,8 @@ use std::io::{Read, Write};
 use std::net::TcpStream;
 use std::time::Duration;
 
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::{quit, Cmd, KeyPressMsg, Msg, Program, View};
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::{quit, Cmd, KeyPressMsg, Msg, Program, View};
 
 const URL: &str = "http://example.com/";
 const HOST: &str = "example.com";

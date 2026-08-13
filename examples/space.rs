@@ -9,16 +9,16 @@
 //! Deviations from upstream:
 //! - `math/rand` is replaced with a small xorshift64* PRNG (no external
 //!   dependency), seeded from the system clock.
-//! - The `image/color` grayscale values are `charming_lipgloss::Color`s.
+//! - The `image/color` grayscale values are `rusty_lipgloss::Color`s.
 //! - `tea.WithFPS(120)` is applied via `ProgramOptions::default().with_fps(120)`.
 
 use std::time::{Duration, SystemTime};
 
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::options::ProgramOptions;
-use charming_bubbletea::screen::WindowSizeMsg;
-use charming_bubbletea::{quit, tick, Cmd, KeyPressMsg, Msg, Program, View};
-use charming_lipgloss::{new_style, Color};
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::options::ProgramOptions;
+use rusty_bubbletea::screen::WindowSizeMsg;
+use rusty_bubbletea::{quit, tick, Cmd, KeyPressMsg, Msg, Program, View};
+use rusty_lipgloss::{new_style, Color};
 
 /// A tiny xorshift64* PRNG seeded from the system clock, used in place of
 /// Go's `math/rand` (deviation: no external rand dependency).

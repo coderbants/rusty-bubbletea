@@ -6,10 +6,10 @@
 //! the inputs with `up`/`down` and press `enter` to submit once both inputs
 //! are valid.
 
-use charming_bubbles::textinput;
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::{batch, quit, Cmd, KeyPressMsg, Msg, Program, View};
-use charming_lipgloss::{new_style, Color, Style};
+use rusty_bubbles::textinput;
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::{batch, quit, Cmd, KeyPressMsg, Msg, Program, View};
+use rusty_lipgloss::{new_style, Color, Style};
 
 // Charmtone palette colors (from `charmbracelet/x/exp/charmtone`).
 const TANG: &str = "#FF985A";

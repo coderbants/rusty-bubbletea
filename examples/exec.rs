@@ -1,4 +1,4 @@
-use charming_bubbletea::{exec_process, quit, Cmd, KeyPressMsg, Model, Msg, Program, View};
+use rusty_bubbletea::{exec_process, quit, Cmd, KeyPressMsg, Model, Msg, Program, View};
 
 struct ExecModel;
 

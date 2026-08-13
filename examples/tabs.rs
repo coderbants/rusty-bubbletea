@@ -3,13 +3,13 @@
 //!
 //! A program demonstrating a tabbed interface with styled tab headers.
 
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::{quit, Cmd, KeyPressMsg, Msg, Program, View};
-use charming_lipgloss::border::{self, Border};
-use charming_lipgloss::color::light_dark;
-use charming_lipgloss::join::join_horizontal;
-use charming_lipgloss::size;
-use charming_lipgloss::{new_style, Color, Style, CENTER, TOP};
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::{quit, Cmd, KeyPressMsg, Msg, Program, View};
+use rusty_lipgloss::border::{self, Border};
+use rusty_lipgloss::color::light_dark;
+use rusty_lipgloss::join::join_horizontal;
+use rusty_lipgloss::size;
+use rusty_lipgloss::{new_style, Color, Style, CENTER, TOP};
 
 /// Styles used by the example.
 #[derive(Clone)]

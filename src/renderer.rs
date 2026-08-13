@@ -49,7 +49,7 @@ pub trait Renderer: Send + Sync {
     fn set_optimizations(&mut self, hard_tabs: bool, backspace: bool, map_nl: bool);
 
     /// Sets the terminal color profile used for downsampling colors.
-    fn set_color_profile(&mut self, p: charming_colorprofile::Profile);
+    fn set_color_profile(&mut self, p: rusty_colorprofile::Profile);
 }
 
 /// PrintLineMsg represents a line printed above the TUI.

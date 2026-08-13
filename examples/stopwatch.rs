@@ -5,11 +5,11 @@
 
 use std::time::Duration;
 
-use charming_bubbles::help;
-use charming_bubbles::key::{self, Binding};
-use charming_bubbles::stopwatch;
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::{quit, Cmd, KeyPressMsg, Msg, Program, View};
+use rusty_bubbles::help;
+use rusty_bubbles::key::{self, Binding};
+use rusty_bubbles::stopwatch;
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::{quit, Cmd, KeyPressMsg, Msg, Program, View};
 
 struct Model {
     stopwatch: stopwatch::Model,

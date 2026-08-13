@@ -3,12 +3,12 @@
 //!
 //! A table that resizes with the window, using the lipgloss table component.
 
-use charming_bubbletea::key::KeyPressMsg;
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::screen::WindowSizeMsg;
-use charming_bubbletea::{quit, Cmd, Msg, Program, View};
-use charming_lipgloss::table;
-use charming_lipgloss::Border;
+use rusty_bubbletea::key::KeyPressMsg;
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::screen::WindowSizeMsg;
+use rusty_bubbletea::{quit, Cmd, Msg, Program, View};
+use rusty_lipgloss::table;
+use rusty_lipgloss::Border;
 
 // Pokemon types.
 const NONE: &str = "";
@@ -56,7 +56,7 @@ impl ModelTrait for Model {
 }
 
 fn build_table() -> table::Table {
-    let base_style = charming_lipgloss::new_style().padding(&[0, 1]);
+    let base_style = rusty_lipgloss::new_style().padding(&[0, 1]);
     let header_style = base_style.clone().foreground("252").bold(true);
     let selected_style = base_style
         .clone()
@@ -127,7 +127,7 @@ fn build_table() -> table::Table {
         .headers(&headers)
         .rows(rows_slice)
         .border(Border::normal())
-        .border_style(charming_lipgloss::new_style().foreground("238"))
+        .border_style(rusty_lipgloss::new_style().foreground("238"))
         .style_func(Box::new(move |row: isize, col: usize| {
             if row == 0 {
                 return header_style.clone();
@@ -172,7 +172,7 @@ fn build_table() -> table::Table {
                 }
             }
         }))
-        .border(charming_lipgloss::border::thick_border());
+        .border(rusty_lipgloss::border::thick_border());
 
     t
 }

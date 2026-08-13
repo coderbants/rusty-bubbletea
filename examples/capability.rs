@@ -5,12 +5,12 @@
 //! `RGB` or `cols` and press enter to request it. This will not work in all
 //! terminals and multiplexers.
 
-use charming_bubbles::textinput;
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::screen::WindowSizeMsg;
-use charming_bubbletea::termcap::CapabilityMsg;
-use charming_bubbletea::{print_f, quit, request_capability, Cmd, KeyPressMsg, Msg, Program, View};
-use charming_lipgloss::new_style;
+use rusty_bubbles::textinput;
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::screen::WindowSizeMsg;
+use rusty_bubbletea::termcap::CapabilityMsg;
+use rusty_bubbletea::{print_f, quit, request_capability, Cmd, KeyPressMsg, Msg, Program, View};
+use rusty_lipgloss::new_style;
 
 struct Model {
     input: textinput::Model,

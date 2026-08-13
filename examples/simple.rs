@@ -5,8 +5,8 @@
 
 use std::time::Duration;
 
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::{quit, suspend, Cmd, KeyPressMsg, Msg, Program, View};
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::{quit, suspend, Cmd, KeyPressMsg, Msg, Program, View};
 
 /// A model can be more or less any type of data. It holds all the data for a
 /// program, so often it's a struct. For this simple example, however, all

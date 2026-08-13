@@ -3,10 +3,10 @@
 //!
 //! A program that cycles through all the available spinner styles.
 
-use charming_bubbles::spinner;
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::{quit, Cmd, KeyPressMsg, Msg, Program, View};
-use charming_lipgloss::Style;
+use rusty_bubbles::spinner;
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::{quit, Cmd, KeyPressMsg, Msg, Program, View};
+use rusty_lipgloss::Style;
 
 /// The available spinners, mirroring the upstream list.
 fn spinners() -> Vec<spinner::Spinner> {

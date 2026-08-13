@@ -1,6 +1,6 @@
-# Contributing to `charming-bubbletea`
+# Contributing to `rusty-bubbletea`
 
-Thanks for your interest in contributing! `charming-bubbletea` is a cleanroom Rust port of
+Thanks for your interest in contributing! `rusty-bubbletea` is a cleanroom Rust port of
 the upstream Go [charmbracelet/bubbletea](https://github.com/charmbracelet/bubbletea) TUI
 framework (The Elm Architecture for Go), pinned to upstream tag `v2.0.8`.
 

@@ -13,10 +13,10 @@
 
 use std::io::{IsTerminal, Read};
 
-use charming_bubbles::textinput;
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::{quit, Cmd, KeyPressMsg, Msg, Program, View};
-use charming_lipgloss::Color;
+use rusty_bubbles::textinput;
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::{quit, Cmd, KeyPressMsg, Msg, Program, View};
+use rusty_lipgloss::Color;
 
 /// A model wrapping a text input pre-filled with the piped content.
 struct Model {

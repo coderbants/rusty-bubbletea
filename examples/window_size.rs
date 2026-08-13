@@ -1,4 +1,4 @@
-use charming_bubbletea::{
+use rusty_bubbletea::{
     print_f, quit, request_window_size, Cmd, KeyPressMsg, Model, Msg, Program, View, WindowSizeMsg,
 };
 

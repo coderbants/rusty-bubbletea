@@ -4,10 +4,10 @@
 //! A textarea that dynamically grows and shrinks its height to fit the
 //! content, clamped between a minimum and maximum height.
 
-use charming_bubbles::textarea;
-use charming_bubbletea::cursor::Cursor;
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::{batch, quit, BackgroundColorMsg, Cmd, KeyPressMsg, Msg, Program, View};
+use rusty_bubbles::textarea;
+use rusty_bubbletea::cursor::Cursor;
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::{batch, quit, BackgroundColorMsg, Cmd, KeyPressMsg, Msg, Program, View};
 
 struct Model {
     textarea: textarea::Model,
@@ -45,7 +45,7 @@ impl ModelTrait for Model {
     fn init(&self) -> Cmd {
         batch(vec![
             Some(Box::new(|| Some(textarea::blink()))),
-            charming_bubbletea::color::request_background_color(),
+            rusty_bubbletea::color::request_background_color(),
         ])
     }
 

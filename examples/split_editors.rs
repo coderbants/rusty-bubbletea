@@ -4,16 +4,16 @@
 //! A program that demonstrates multiple textareas split side by side, with
 //! support for adding, removing and cycling between editors.
 
-use charming_bubbles::help;
-use charming_bubbles::key::{self, Binding};
-use charming_bubbles::textarea;
-use charming_bubbletea::cursor::Cursor;
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::screen::WindowSizeMsg;
-use charming_bubbletea::{batch, quit, Cmd, KeyPressMsg, Msg, Program, View};
-use charming_lipgloss::border;
-use charming_lipgloss::join::join_horizontal;
-use charming_lipgloss::{Color, Style, TOP};
+use rusty_bubbles::help;
+use rusty_bubbles::key::{self, Binding};
+use rusty_bubbles::textarea;
+use rusty_bubbletea::cursor::Cursor;
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::screen::WindowSizeMsg;
+use rusty_bubbletea::{batch, quit, Cmd, KeyPressMsg, Msg, Program, View};
+use rusty_lipgloss::border;
+use rusty_lipgloss::join::join_horizontal;
+use rusty_lipgloss::{Color, Style, TOP};
 
 const INITIAL_INPUTS: usize = 2;
 const MAX_INPUTS: usize = 6;
@@ -173,7 +173,7 @@ impl Model {
         // Find textarea offset to position the real cursor: calculate the
         // width of all textareas to the left of the focused one.
         for v in views.iter().take(self.focus) {
-            c.position.x += charming_lipgloss::size::width(v);
+            c.position.x += rusty_lipgloss::size::width(v);
         }
 
         Some(c)

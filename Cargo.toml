@@ -1,15 +1,15 @@
 [package]
-name = "charming-bubbletea"
-version = "2.0.10"
+name = "rusty-bubbletea"
+version = "2.0.8"
 edition = "2021"
 description = "Cleanroom Rust port of Charmbracelet's Bubble Tea (v2.0.8) TUI Elm architecture framework"
 license = "MIT"
 
 [dependencies]
-charming-colorprofile = { version = "0.4.5", path = "../charming-colorprofile" }
-charming-lipgloss = { version = "2.0.7", path = "../charming-lipgloss" }
-charming-ultraviolet = { version = "0.0.0-20260813000000", path = "../charming-ultraviolet" }
-charming-x-ansi = { version = "0.0.0-20260813000000", path = "../charming-x-ansi" }
+rusty-colorprofile = { version = "0.4.3", path = "../rusty-colorprofile" }
+rusty-lipgloss = { version = "2.0.5", path = "../rusty-lipgloss" }
+rusty-ultraviolet = { version = "0.0.0-20260703014108-f5a850f9c2b7", path = "../rusty-ultraviolet" }
+rusty-x-ansi = { version = "0.11.7", path = "../rusty-x-ansi" }
 unicode-segmentation = "1.10.1"
 libc = "0.2"
 tokio = { version = "1.38", features = ["full"] }
@@ -18,10 +18,10 @@ crossterm = "0.27"
 futures = "0.3"
 
 [dev-dependencies]
-charming-testkit = { version = "0.1.1", path = "../charming-testkit" }
+rusty-testkit = { version = "0.1.1", path = "../rusty-testkit" }
 tokio-test = "0.4"
-charming-bubbles = { version = "2.1.2", path = "../charming-bubbles" }
+rusty-bubbles = { version = "2.1.0", path = "../rusty-bubbles" }
 
 [lib]
-name = "charming_bubbletea"
+name = "rusty_bubbletea"
 path = "src/lib.rs"

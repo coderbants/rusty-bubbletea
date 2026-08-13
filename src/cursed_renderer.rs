@@ -4,8 +4,8 @@
 //! <public-docs>
 //! The high-performance standard terminal renderer for Bubble Tea v2.0.8.
 //!
-//! Wraps [charming_ultraviolet::TerminalRenderer] and
-//! [charming_ultraviolet::ScreenBuffer] exactly like the upstream `cursedRenderer`
+//! Wraps [rusty_ultraviolet::TerminalRenderer] and
+//! [rusty_ultraviolet::ScreenBuffer] exactly like the upstream `cursedRenderer`
 //! struct, so the emitted ANSI output is byte-identical to Go. Manages
 //! declarative `View` frames, alt-screen mode, cursor visibility, terminal
 //! modes (bracketed paste, focus, mouse, kitty keyboard), window title, and
@@ -19,9 +19,9 @@ use crate::model::Cmd;
 use crate::mouse::MouseMsg;
 use crate::renderer::Renderer;
 use crate::view::{MouseMode, ProgressBar, ProgressBarState, View};
-use charming_ultraviolet::{Environ, ScreenBuffer, StyledString};
-use charming_x_ansi as ansi;
-use charming_x_ansi::method::WidthMethod;
+use rusty_ultraviolet::{Environ, ScreenBuffer, StyledString};
+use rusty_x_ansi as ansi;
+use rusty_x_ansi::method::WidthMethod;
 use std::io::Write;
 
 /// CursedRenderer manages high-performance declarative View rendering.
@@ -29,7 +29,7 @@ pub struct CursedRenderer {
     w: Box<dyn Write + Send + Sync>,
     /// Updates buffer to be flushed to [Self::w].
     buf: Vec<u8>,
-    scr: charming_ultraviolet::TerminalRenderer,
+    scr: rusty_ultraviolet::TerminalRenderer,
     cellbuf: ScreenBuffer,
     last_view: Option<View>,
     env: Vec<String>,
@@ -41,8 +41,8 @@ pub struct CursedRenderer {
     height: usize,
     // NOTE: upstream guards methods with a `sync.Mutex`; the ported methods
     // take `&mut self`, so exclusivity is enforced by the type system.
-    profile: charming_colorprofile::Profile,
-    logger: Option<Box<dyn charming_ultraviolet::Logger + Send + Sync>>,
+    profile: rusty_colorprofile::Profile,
+    logger: Option<Box<dyn rusty_ultraviolet::Logger + Send + Sync>>,
     view: View,
     /// Whether to use hard tabs to optimize cursor movements.
     hard_tabs: bool,
@@ -65,14 +65,14 @@ pub fn new_cursed_renderer(
     let mut s = CursedRenderer {
         w,
         buf: Vec::new(),
-        scr: charming_ultraviolet::TerminalRenderer::new_without_writer(&Environ(env.to_vec())),
-        cellbuf: charming_ultraviolet::new_screen_buffer(width, height),
+        scr: rusty_ultraviolet::TerminalRenderer::new_without_writer(&Environ(env.to_vec())),
+        cellbuf: rusty_ultraviolet::new_screen_buffer(width, height),
         last_view: None,
         env: env.to_vec(),
         term: Environ(env.to_vec()).getenv("TERM"),
         width,
         height,
-        profile: charming_colorprofile::Profile::NoTty,
+        profile: rusty_colorprofile::Profile::NoTty,
         logger: None,
         view: View::default(),
         hard_tabs: false,
@@ -89,7 +89,7 @@ impl CursedRenderer {
     /// SetLogger sets the logger for the renderer.
     pub fn set_logger(
         &mut self,
-        logger: Option<Box<dyn charming_ultraviolet::Logger + Send + Sync>>,
+        logger: Option<Box<dyn rusty_ultraviolet::Logger + Send + Sync>>,
     ) {
         self.logger = logger;
     }
@@ -109,7 +109,7 @@ impl CursedRenderer {
     }
 
     /// SetColorProfile sets the color profile of the renderer.
-    pub fn set_color_profile(&mut self, p: charming_colorprofile::Profile) {
+    pub fn set_color_profile(&mut self, p: rusty_colorprofile::Profile) {
         self.profile = p;
         self.scr.set_color_profile_public(p);
     }
@@ -146,7 +146,7 @@ impl CursedRenderer {
 /// reset reinitializes the internal screen renderer.
 fn reset(s: &mut CursedRenderer) {
     s.buf.clear();
-    s.scr = charming_ultraviolet::TerminalRenderer::new_without_writer(&Environ(s.env.clone()));
+    s.scr = rusty_ultraviolet::TerminalRenderer::new_without_writer(&Environ(s.env.clone()));
     s.scr.set_color_profile_public(s.profile);
     s.scr.set_relative_cursor_public(true); // Always start in inline mode
     s.scr.set_fullscreen_public(false); // Always start in inline mode
@@ -322,7 +322,7 @@ impl Renderer for CursedRenderer {
         CursedRenderer::set_optimizations(self, hard_tabs, backspace, map_nl);
     }
 
-    fn set_color_profile(&mut self, p: charming_colorprofile::Profile) {
+    fn set_color_profile(&mut self, p: rusty_colorprofile::Profile) {
         CursedRenderer::set_color_profile(self, p);
     }
 
@@ -537,7 +537,7 @@ impl Renderer for CursedRenderer {
 
     fn flush(&mut self, closing: bool) -> Result<(), Box<dyn std::error::Error>> {
         let view = self.view.clone();
-        let mut frame_area = charming_ultraviolet::rect(0, 0, self.width, self.height);
+        let mut frame_area = rusty_ultraviolet::rect(0, 0, self.width, self.height);
         if view.content.is_empty() {
             // If the component is nil, we should clear the screen buffer.
             frame_area.max.1 = 0;

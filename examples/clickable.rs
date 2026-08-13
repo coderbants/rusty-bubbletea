@@ -19,18 +19,18 @@
 use std::sync::Mutex;
 use std::time::SystemTime;
 
-use charming_bubbletea::color::{request_background_color, BackgroundColorMsg};
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::mouse::{MouseButton, MouseMsg};
-use charming_bubbletea::screen::WindowSizeMsg;
-use charming_bubbletea::view::MouseMode;
-use charming_bubbletea::{batch, quit, Cmd, KeyPressMsg, Msg, Program, View};
-use charming_lipgloss::border;
-use charming_lipgloss::layer::{new_compositor, new_layer, Layer};
-use charming_lipgloss::position::place;
-use charming_lipgloss::size;
-use charming_lipgloss::whitespace::{with_whitespace_chars, with_whitespace_style};
-use charming_lipgloss::{new_style, Color, Style, LEFT, TOP};
+use rusty_bubbletea::color::{request_background_color, BackgroundColorMsg};
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::mouse::{MouseButton, MouseMsg};
+use rusty_bubbletea::screen::WindowSizeMsg;
+use rusty_bubbletea::view::MouseMode;
+use rusty_bubbletea::{batch, quit, Cmd, KeyPressMsg, Msg, Program, View};
+use rusty_lipgloss::border;
+use rusty_lipgloss::layer::{new_compositor, new_layer, Layer};
+use rusty_lipgloss::position::place;
+use rusty_lipgloss::size;
+use rusty_lipgloss::whitespace::{with_whitespace_chars, with_whitespace_style};
+use rusty_lipgloss::{new_style, Color, Style, LEFT, TOP};
 
 /// LayerHitMsg is a message that is sent to the program when a layer is hit by
 /// a mouse event. This is used to determine which layer in a composable view
@@ -53,7 +53,7 @@ fn bg_text_style() -> Style {
 }
 
 /// Whitespace options for the background, mirroring `bgWhitespace`.
-fn bg_whitespace() -> Vec<charming_lipgloss::whitespace::Whitespace> {
+fn bg_whitespace() -> Vec<rusty_lipgloss::whitespace::Whitespace> {
     vec![
         with_whitespace_chars("/"),
         with_whitespace_style(new_style().foreground_color(Color::parse("238"))),

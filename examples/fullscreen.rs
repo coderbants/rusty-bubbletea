@@ -4,7 +4,7 @@
 //! Fullscreen example: a one-second tick counts a model down from 5 to 0,
 //! then the program exits. The view renders in alternate screen mode.
 
-use charming_bubbletea::{Cmd, KeyPressMsg, Model, Msg, Program, View};
+use rusty_bubbletea::{Cmd, KeyPressMsg, Model, Msg, Program, View};
 use std::time::{Duration, SystemTime};
 
 /// tickMsg is a message that represents a tick.
@@ -23,14 +23,14 @@ impl Model for FullscreenModel {
     fn update(&mut self, msg: &dyn Msg) -> Cmd {
         if let Some(k) = msg.as_any().downcast_ref::<KeyPressMsg>() {
             match k.0.to_string().as_str() {
-                "q" | "esc" | "ctrl+c" => return charming_bubbletea::quit(),
+                "q" | "esc" | "ctrl+c" => return rusty_bubbletea::quit(),
                 _ => {}
             }
         }
         if msg.as_any().is::<TickMsg>() {
             self.0 = self.0.saturating_sub(1);
             if self.0 == 0 {
-                return charming_bubbletea::quit();
+                return rusty_bubbletea::quit();
             }
             return tick();
         }
@@ -48,7 +48,7 @@ impl Model for FullscreenModel {
 }
 
 fn tick() -> Cmd {
-    charming_bubbletea::tick(Duration::from_secs(1), |_: SystemTime| {
+    rusty_bubbletea::tick(Duration::from_secs(1), |_: SystemTime| {
         Some(Box::new(TickMsg))
     })
 }

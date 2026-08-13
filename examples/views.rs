@@ -13,9 +13,9 @@
 
 use std::time::Duration;
 
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::{quit, tick, Cmd, KeyPressMsg, Msg, Program, View};
-use charming_lipgloss::{new_style, Color, Style};
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::{quit, tick, Cmd, KeyPressMsg, Msg, Program, View};
+use rusty_lipgloss::{new_style, Color, Style};
 
 /// Constants used for the progress bar.
 const PROGRESS_BAR_WIDTH: usize = 71;
@@ -57,7 +57,7 @@ fn ramp() -> Vec<Style> {
     // string (`colorToHex` uses `int64(f * 255)`).
     let mut i = 0.0;
     while i < PROGRESS_BAR_WIDTH as f64 {
-        let (r, g, b) = charming_lipgloss::blending::blend_luv_rgb(
+        let (r, g, b) = rusty_lipgloss::blending::blend_luv_rgb(
             &Color::parse("#B14FFF"),
             &Color::parse("#00FFA3"),
             i / PROGRESS_BAR_WIDTH as f64,

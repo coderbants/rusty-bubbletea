@@ -11,13 +11,13 @@
 
 use std::time::Duration;
 
-use charming_bubbles::spinner;
-use charming_bubbles::timer;
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::{batch, quit, Cmd, KeyPressMsg, Msg, Program, View};
-use charming_lipgloss::border;
-use charming_lipgloss::join::join_horizontal;
-use charming_lipgloss::{Style, TOP};
+use rusty_bubbles::spinner;
+use rusty_bubbles::timer;
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::{batch, quit, Cmd, KeyPressMsg, Msg, Program, View};
+use rusty_lipgloss::border;
+use rusty_lipgloss::join::join_horizontal;
+use rusty_lipgloss::{Style, TOP};
 
 const DEFAULT_TIME: Duration = Duration::from_secs(60);
 
@@ -47,7 +47,7 @@ fn model_style() -> Style {
     Style::new()
         .width(15)
         .height(5)
-        .align(&[charming_lipgloss::CENTER, charming_lipgloss::CENTER])
+        .align(&[rusty_lipgloss::CENTER, rusty_lipgloss::CENTER])
         .border(border::hidden_border(), &[true, true, true, true])
 }
 
@@ -55,7 +55,7 @@ fn focused_model_style() -> Style {
     Style::new()
         .width(15)
         .height(5)
-        .align(&[charming_lipgloss::CENTER, charming_lipgloss::CENTER])
+        .align(&[rusty_lipgloss::CENTER, rusty_lipgloss::CENTER])
         .border(border::normal_border(), &[true, true, true, true])
         .border_foreground(&["69"])
 }

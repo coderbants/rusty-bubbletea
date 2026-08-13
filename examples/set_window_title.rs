@@ -3,8 +3,8 @@
 //!
 //! A simple example illustrating how to set a window title.
 
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::{quit, Cmd, KeyPressMsg, Msg, Program, View};
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::{quit, Cmd, KeyPressMsg, Msg, Program, View};
 
 /// The window title we'd like to set.
 const WINDOW_TITLE: &str = "Hello, Bubble Tea";
@@ -25,7 +25,7 @@ impl ModelTrait for Model {
     }
 
     fn view(&self) -> View {
-        let wrap = charming_lipgloss::new_style().width(78);
+        let wrap = rusty_lipgloss::new_style().width(78);
         let mut v = View::new(&format!(
             "{}\n\nPress any key to quit.",
             wrap.render(&format!(

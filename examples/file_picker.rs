@@ -7,9 +7,9 @@
 
 use std::time::Duration;
 
-use charming_bubbles::filepicker;
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::{batch, quit, tick, Cmd, KeyPressMsg, Msg, Program, View};
+use rusty_bubbles::filepicker;
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::{batch, quit, tick, Cmd, KeyPressMsg, Msg, Program, View};
 
 /// ClearErrorMsg is sent after a short delay to clear the displayed error.
 #[derive(Debug)]

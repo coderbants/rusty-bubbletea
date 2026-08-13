@@ -206,7 +206,7 @@ impl<M: Model> Program<M> {
             if let Ok(mut buf) = self.startup_buf.lock() {
                 if let Some(b) = buf.as_mut() {
                     b.extend_from_slice(
-                        charming_x_ansi::background::REQUEST_BACKGROUND_COLOR.as_bytes(),
+                        rusty_x_ansi::background::REQUEST_BACKGROUND_COLOR.as_bytes(),
                     );
                 }
             }
@@ -218,7 +218,7 @@ impl<M: Model> Program<M> {
             if let Ok(mut buf) = self.startup_buf.lock() {
                 if let Some(b) = buf.as_mut() {
                     b.extend_from_slice(
-                        charming_x_ansi::background::REQUEST_FOREGROUND_COLOR.as_bytes(),
+                        rusty_x_ansi::background::REQUEST_FOREGROUND_COLOR.as_bytes(),
                     );
                 }
             }
@@ -230,7 +230,7 @@ impl<M: Model> Program<M> {
             if let Ok(mut buf) = self.startup_buf.lock() {
                 if let Some(b) = buf.as_mut() {
                     b.extend_from_slice(
-                        charming_x_ansi::background::REQUEST_CURSOR_COLOR.as_bytes(),
+                        rusty_x_ansi::background::REQUEST_CURSOR_COLOR.as_bytes(),
                     );
                 }
             }
@@ -307,11 +307,11 @@ impl<M: Model> Program<M> {
         {
             let p = match profile.profile {
                 crate::profile::ColorProfile::TrueColor => {
-                    charming_colorprofile::Profile::TrueColor
+                    rusty_colorprofile::Profile::TrueColor
                 }
-                crate::profile::ColorProfile::ANSI256 => charming_colorprofile::Profile::Ansi256,
-                crate::profile::ColorProfile::ANSI => charming_colorprofile::Profile::Ansi,
-                crate::profile::ColorProfile::Ascii => charming_colorprofile::Profile::Ascii,
+                crate::profile::ColorProfile::ANSI256 => rusty_colorprofile::Profile::Ansi256,
+                crate::profile::ColorProfile::ANSI => rusty_colorprofile::Profile::Ansi,
+                crate::profile::ColorProfile::Ascii => rusty_colorprofile::Profile::Ascii,
             };
             self.renderer.lock().unwrap().set_color_profile(p);
         } else if let Some(_resume) = processed_msg.as_ref().as_any().downcast_ref::<ResumeMsg>() {
@@ -405,10 +405,10 @@ impl<M: Model> Program<M> {
         // ColorProfileMsg path may later upgrade it.
         {
             use std::os::fd::AsRawFd as _;
-            let env = charming_ultraviolet::Environ(
+            let env = rusty_ultraviolet::Environ(
                 std::env::vars().map(|(k, v)| format!("{k}={v}")).collect(),
             );
-            let profile = charming_ultraviolet::terminal_screen::detect_color_profile(
+            let profile = rusty_ultraviolet::terminal_screen::detect_color_profile(
                 Some(std::io::stdout().as_raw_fd()),
                 &env,
             );
@@ -416,16 +416,16 @@ impl<M: Model> Program<M> {
                 .lock()
                 .unwrap()
                 .set_color_profile(match profile {
-                    charming_ultraviolet::terminal_screen::ColorProfile::TrueColor => {
-                        charming_colorprofile::Profile::TrueColor
+                    rusty_ultraviolet::terminal_screen::ColorProfile::TrueColor => {
+                        rusty_colorprofile::Profile::TrueColor
                     }
-                    charming_ultraviolet::terminal_screen::ColorProfile::Ansi256 => {
-                        charming_colorprofile::Profile::Ansi256
+                    rusty_ultraviolet::terminal_screen::ColorProfile::Ansi256 => {
+                        rusty_colorprofile::Profile::Ansi256
                     }
-                    charming_ultraviolet::terminal_screen::ColorProfile::Ansi => {
-                        charming_colorprofile::Profile::Ansi
+                    rusty_ultraviolet::terminal_screen::ColorProfile::Ansi => {
+                        rusty_colorprofile::Profile::Ansi
                     }
-                    _ => charming_colorprofile::Profile::NoTty,
+                    _ => rusty_colorprofile::Profile::NoTty,
                 });
         }
 
@@ -449,12 +449,12 @@ impl<M: Model> Program<M> {
         let input_tx = tx.clone();
         thread::spawn(move || {
             let reader: Box<dyn std::io::Read + Send> = Box::new(std::io::stdin());
-            let mut tr = charming_ultraviolet::terminal_reader::new_terminal_reader(
+            let mut tr = rusty_ultraviolet::terminal_reader::new_terminal_reader(
                 reader,
                 "xterm-256color",
             );
-            tr.set_legacy(charming_ultraviolet::LegacyKeyEncoding::default());
-            let (dec_tx, dec_rx) = std::sync::mpsc::channel::<charming_ultraviolet::DecodedEvent>();
+            tr.set_legacy(rusty_ultraviolet::LegacyKeyEncoding::default());
+            let (dec_tx, dec_rx) = std::sync::mpsc::channel::<rusty_ultraviolet::DecodedEvent>();
             let streamer = std::thread::spawn(move || {
                 let _ = tr.stream_events(&dec_tx);
             });
@@ -493,21 +493,21 @@ impl<M: Model> Program<M> {
         // upstream `go p.Send(ColorProfileMsg{*p.profile})` at startup.
         {
             use std::os::fd::AsRawFd as _;
-            let env = charming_ultraviolet::Environ(
+            let env = rusty_ultraviolet::Environ(
                 std::env::vars().map(|(k, v)| format!("{k}={v}")).collect(),
             );
-            let profile = charming_ultraviolet::terminal_screen::detect_color_profile(
+            let profile = rusty_ultraviolet::terminal_screen::detect_color_profile(
                 Some(std::io::stdout().as_raw_fd()),
                 &env,
             );
             let msg_profile = match profile {
-                charming_ultraviolet::terminal_screen::ColorProfile::TrueColor => {
+                rusty_ultraviolet::terminal_screen::ColorProfile::TrueColor => {
                     crate::profile::ColorProfile::TrueColor
                 }
-                charming_ultraviolet::terminal_screen::ColorProfile::Ansi256 => {
+                rusty_ultraviolet::terminal_screen::ColorProfile::Ansi256 => {
                     crate::profile::ColorProfile::ANSI256
                 }
-                charming_ultraviolet::terminal_screen::ColorProfile::Ansi => {
+                rusty_ultraviolet::terminal_screen::ColorProfile::Ansi => {
                     crate::profile::ColorProfile::ANSI
                 }
                 _ => crate::profile::ColorProfile::Ascii,
@@ -669,10 +669,10 @@ fn should_query_synchronized_output() -> bool {
         || term_type.contains("rio")
 }
 
-/// Converts an ultraviolet [charming_ultraviolet::DecodedEvent] into a
+/// Converts an ultraviolet [rusty_ultraviolet::DecodedEvent] into a
 /// Bubble Tea message.
-fn decoded_to_msg(ev: charming_ultraviolet::DecodedEvent) -> Option<Box<dyn Msg>> {
-    use charming_ultraviolet::DecodedEvent as D;
+fn decoded_to_msg(ev: rusty_ultraviolet::DecodedEvent) -> Option<Box<dyn Msg>> {
+    use rusty_ultraviolet::DecodedEvent as D;
     match ev {
         D::KeyPress(k) => Some(Box::new(KeyPressMsg(uv_key_to_key(k)))),
         D::KeyRelease(k) => Some(Box::new(KeyReleaseMsg(uv_key_to_key(k)))),
@@ -705,8 +705,8 @@ fn decoded_to_msg(ev: charming_ultraviolet::DecodedEvent) -> Option<Box<dyn Msg>
 }
 
 /// Converts an ultraviolet key into the Bubble Tea key representation.
-fn uv_key_to_key(k: charming_ultraviolet::Key) -> crate::key::Key {
-    use charming_ultraviolet::key as uvk;
+fn uv_key_to_key(k: rusty_ultraviolet::Key) -> crate::key::Key {
+    use rusty_ultraviolet::key as uvk;
     let code = match k.code {
         uvk::KEY_UP => crate::key::KEY_UP,
         uvk::KEY_DOWN => crate::key::KEY_DOWN,
@@ -736,7 +736,7 @@ fn uv_key_to_key(k: charming_ultraviolet::Key) -> crate::key::Key {
 }
 
 /// Converts an ultraviolet mouse event into the Bubble Tea representation.
-fn uv_mouse_to_mouse(m: charming_ultraviolet::Mouse) -> crate::mouse::Mouse {
+fn uv_mouse_to_mouse(m: rusty_ultraviolet::Mouse) -> crate::mouse::Mouse {
     let button = match m.button.0 {
         0 => crate::mouse::MouseButton::MouseNone,
         1 => crate::mouse::MouseButton::MouseLeft,

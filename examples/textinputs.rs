@@ -4,12 +4,12 @@
 //! A simple example demonstrating the use of multiple text input components
 //! from the Bubbles component library.
 
-use charming_bubbles::cursor;
-use charming_bubbles::textinput;
-use charming_bubbletea::cursor::Cursor;
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::{batch, quit, Cmd, KeyPressMsg, Msg, Program, View};
-use charming_lipgloss::{Color, Style};
+use rusty_bubbles::cursor;
+use rusty_bubbles::textinput;
+use rusty_bubbletea::cursor::Cursor;
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::{batch, quit, Cmd, KeyPressMsg, Msg, Program, View};
+use rusty_lipgloss::{Color, Style};
 
 fn focused_style() -> Style {
     Style::new().foreground("205")

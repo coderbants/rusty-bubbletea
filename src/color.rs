@@ -7,7 +7,7 @@
 //! Color requests (`RequestBackgroundColor`, `RequestForegroundColor`,
 //! `RequestCursorColor`) and response messages.
 //!
-//! The response messages wrap `charming-ultraviolet`'s color events, which
+//! The response messages wrap `rusty-ultraviolet`'s color events, which
 //! mirror the upstream `uv.ForegroundColorEvent` / `BackgroundColorEvent` /
 //! `CursorColorEvent` types (hex via OSC response parsing, darkness via the
 //! HSL-based `is_dark_color`).
@@ -19,7 +19,7 @@ use crate::model::Cmd;
 ///
 /// This is an alias of the ultraviolet color event payload; use `to_hex` and
 /// `is_dark` through the message wrappers.
-pub type Color = charming_x_ansi::color::RGBColor;
+pub type Color = rusty_x_ansi::color::RGBColor;
 
 /// RequestBackgroundColor is a command that requests the terminal background color.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -118,7 +118,7 @@ impl CursorColorMsg {
 
 /// is_dark_color returns whether the given color is dark, mirroring the
 /// upstream `uv.isDarkColor` (HSL lightness < 0.5).
-fn is_dark_color(c: charming_x_ansi::color::RGBColor) -> bool {
+fn is_dark_color(c: rusty_x_ansi::color::RGBColor) -> bool {
     let (_, _, l) = rgb_to_hsl(c.r, c.g, c.b);
     l < 0.5
 }

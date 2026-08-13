@@ -4,12 +4,12 @@
 //! A demo of the terminal's native progress bar, set on the declarative
 //! `View`.
 
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::screen::WindowSizeMsg;
-use charming_bubbletea::{
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::screen::WindowSizeMsg;
+use rusty_bubbletea::{
     new_progress_bar, quit, Cmd, KeyPressMsg, Msg, Program, ProgressBarState, View,
 };
-use charming_lipgloss::Style;
+use rusty_lipgloss::Style;
 
 fn body() -> Style {
     Style::new().padding(&[1, 2])

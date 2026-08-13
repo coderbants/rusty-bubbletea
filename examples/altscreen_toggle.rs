@@ -3,8 +3,8 @@
 //!
 //! Demonstrates switching between the inline and alternate screen modes.
 
-use charming_bubbletea::{quit, suspend, Cmd, KeyPressMsg, Msg, Program, ResumeMsg, View};
-use charming_lipgloss::{new_style, Color, Style};
+use rusty_bubbletea::{quit, suspend, Cmd, KeyPressMsg, Msg, Program, ResumeMsg, View};
+use rusty_lipgloss::{new_style, Color, Style};
 
 /// Keyword style, mirroring the upstream `keywordStyle`.
 fn keyword_style() -> Style {
@@ -24,7 +24,7 @@ struct Model {
     suspending: bool,
 }
 
-impl charming_bubbletea::model::Model for Model {
+impl rusty_bubbletea::model::Model for Model {
     fn init(&self) -> Cmd {
         None
     }

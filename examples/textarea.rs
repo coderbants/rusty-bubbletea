@@ -4,10 +4,10 @@
 //! A simple program demonstrating the textarea component from the Bubbles
 //! component library.
 
-use charming_bubbles::textarea;
-use charming_bubbletea::cursor::Cursor;
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::{batch, quit, BackgroundColorMsg, Cmd, KeyPressMsg, Msg, Program, View};
+use rusty_bubbles::textarea;
+use rusty_bubbletea::cursor::Cursor;
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::{batch, quit, BackgroundColorMsg, Cmd, KeyPressMsg, Msg, Program, View};
 
 /// An error message, mirroring the upstream `errMsg` type.
 #[derive(Debug)]
@@ -41,7 +41,7 @@ impl ModelTrait for Model {
     fn init(&self) -> Cmd {
         batch(vec![
             Some(Box::new(|| Some(textarea::blink()))),
-            charming_bubbletea::color::request_background_color(),
+            rusty_bubbletea::color::request_background_color(),
         ])
     }
 
@@ -103,7 +103,7 @@ impl ModelTrait for Model {
             if let Some(mut cur) = self.textarea.cursor() {
                 // Set the y offset of the cursor based on the position of the
                 // textarea in the application.
-                let offset = charming_lipgloss::size::height(&self.header_view());
+                let offset = rusty_lipgloss::size::height(&self.header_view());
                 cur.position.y += offset;
                 c = Some(cur);
             }

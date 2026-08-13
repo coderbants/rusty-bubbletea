@@ -5,15 +5,15 @@
 //! component library. Use the mouse wheel or the `pgup`/`pgdown`, `k`/`j`,
 //! `u`/`d` and `g`/`G` keys to scroll through the content.
 
-use charming_bubbles::viewport;
-use charming_bubbles::viewport::GutterContext;
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::screen::WindowSizeMsg;
-use charming_bubbletea::{quit, Cmd, KeyPressMsg, MouseMode, Msg, Program, View};
-use charming_lipgloss::border::Border;
-use charming_lipgloss::join::join_horizontal;
-use charming_lipgloss::size;
-use charming_lipgloss::{new_style, Color, Style};
+use rusty_bubbles::viewport;
+use rusty_bubbles::viewport::GutterContext;
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::screen::WindowSizeMsg;
+use rusty_bubbletea::{quit, Cmd, KeyPressMsg, MouseMode, Msg, Program, View};
+use rusty_lipgloss::border::Border;
+use rusty_lipgloss::join::join_horizontal;
+use rusty_lipgloss::size;
+use rusty_lipgloss::{new_style, Color, Style};
 
 /// The content to display. The upstream example reads `artichoke.md` from
 /// disk; this port embeds the same content at compile time.
@@ -118,7 +118,7 @@ impl Model {
     fn header_view(&self) -> String {
         let title = title_style().render("Mr. Pager");
         let line = "─".repeat(self.viewport.width().saturating_sub(size::width(&title)));
-        join_horizontal(charming_lipgloss::CENTER, &[&title, &line])
+        join_horizontal(rusty_lipgloss::CENTER, &[&title, &line])
     }
 
     fn footer_view(&self) -> String {
@@ -128,7 +128,7 @@ impl Model {
             self.viewport.horizontal_scroll_percent() * 100.0
         ));
         let line = "─".repeat(self.viewport.width().saturating_sub(size::width(&info)));
-        join_horizontal(charming_lipgloss::CENTER, &[&line, &info])
+        join_horizontal(rusty_lipgloss::CENTER, &[&line, &info])
     }
 }
 

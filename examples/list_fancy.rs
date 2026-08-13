@@ -12,15 +12,15 @@
 
 use std::any::Any;
 
-use charming_bubbles::key;
-use charming_bubbles::list;
-use charming_bubbles::list::FilterState;
-use charming_bubbletea::color::BackgroundColorMsg;
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::screen::WindowSizeMsg;
-use charming_bubbletea::{batch, request_background_color, Cmd, KeyPressMsg, Msg, Program, View};
-use charming_lipgloss::color::light_dark;
-use charming_lipgloss::{new_style, Color, Style};
+use rusty_bubbles::key;
+use rusty_bubbles::list;
+use rusty_bubbles::list::FilterState;
+use rusty_bubbletea::color::BackgroundColorMsg;
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::screen::WindowSizeMsg;
+use rusty_bubbletea::{batch, request_background_color, Cmd, KeyPressMsg, Msg, Program, View};
+use rusty_lipgloss::color::light_dark;
+use rusty_lipgloss::{new_style, Color, Style};
 
 #[derive(Clone)]
 struct Styles {

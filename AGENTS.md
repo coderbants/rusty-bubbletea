@@ -1,4 +1,4 @@
-# Agent Instructions for `charming-bubbletea`
+# Agent Instructions for `rusty-bubbletea`
 
 > [!IMPORTANT]
 > **Subsequent Cycle Requirement**: On every development cycle, before doing any work, the agent MUST inspect [`UPSTREAM_MAPPING.md`](UPSTREAM_MAPPING.md) to verify that all upstream Go files and examples are accounted for. When adding, modifying, or refactoring files, the agent MUST update [`UPSTREAM_MAPPING.md`](UPSTREAM_MAPPING.md) to reflect the current state.

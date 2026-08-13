@@ -10,9 +10,9 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
-use charming_bubbles::spinner;
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::{batch, quit, Cmd, KeyPressMsg, Msg, Program, View};
+use rusty_bubbles::spinner;
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::{batch, quit, Cmd, KeyPressMsg, Msg, Program, View};
 
 /// A message used to indicate that activity has occurred. In the real world
 /// (for example, chat) this would contain actual data.

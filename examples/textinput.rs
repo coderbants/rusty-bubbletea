@@ -4,9 +4,9 @@
 //! A simple program demonstrating the text input component from the Bubbles
 //! component library.
 
-use charming_bubbles::textinput;
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::{quit, Cmd, KeyPressMsg, Msg, Program, View};
+use rusty_bubbles::textinput;
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::{quit, Cmd, KeyPressMsg, Msg, Program, View};
 
 struct Model {
     text_input: textinput::Model,
@@ -49,8 +49,8 @@ impl ModelTrait for Model {
     }
 
     fn view(&self) -> View {
-        let str = charming_lipgloss::join::join_vertical(
-            charming_lipgloss::TOP,
+        let str = rusty_lipgloss::join::join_vertical(
+            rusty_lipgloss::TOP,
             &[
                 &self.header_view(),
                 &self.text_input.view(),
@@ -67,7 +67,7 @@ impl ModelTrait for Model {
         // height (`c.Y += lipgloss.Height(m.headerView())`).
         if let Some(c) = self.text_input.cursor() {
             let mut c = c;
-            c.position.y += charming_lipgloss::size::height(&self.header_view());
+            c.position.y += rusty_lipgloss::size::height(&self.header_view());
             v.cursor = Some(c);
         }
         v

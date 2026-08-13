@@ -5,16 +5,16 @@
 //! events (specifically, preventing accidental quits when there are unsaved
 //! changes).
 
-use charming_bubbles::help;
-use charming_bubbles::key::{self, Binding};
-use charming_bubbles::textarea;
-use charming_bubbletea::commands::QuitMsg;
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::options::ProgramOptions;
-use charming_bubbletea::{batch, quit, Cmd, KeyPressMsg, Msg, Program, View};
-use charming_lipgloss::border;
-use charming_lipgloss::join::join_horizontal;
-use charming_lipgloss::{new_style, Color, Style, TOP};
+use rusty_bubbles::help;
+use rusty_bubbles::key::{self, Binding};
+use rusty_bubbles::textarea;
+use rusty_bubbletea::commands::QuitMsg;
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::options::ProgramOptions;
+use rusty_bubbletea::{batch, quit, Cmd, KeyPressMsg, Msg, Program, View};
+use rusty_lipgloss::border;
+use rusty_lipgloss::join::join_horizontal;
+use rusty_lipgloss::{new_style, Color, Style, TOP};
 
 /// Styles used by the example, mirroring the upstream global styles.
 fn choice_style() -> Style {

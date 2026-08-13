@@ -8,9 +8,9 @@
 
 use std::io::Write as _;
 
-use charming_bubbles::textinput;
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::{print_f, quit, Cmd, KeyPressMsg, Msg, Program, View};
+use rusty_bubbles::textinput;
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::{print_f, quit, Cmd, KeyPressMsg, Msg, Program, View};
 
 struct Model {
     input: textinput::Model,
@@ -84,7 +84,7 @@ impl ModelTrait for Model {
         let cmd = self.input.update(msg);
         cmds.push(cmd);
 
-        charming_bubbletea::batch(cmds)
+        rusty_bubbletea::batch(cmds)
     }
 
     fn view(&self) -> View {
@@ -165,10 +165,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 /// Formats a message the way Go's `%T %+v` would for the messages the
 /// query-term example receives (upstream `log.Printf("Received message: %T %+v")`).
-fn go_fmt(msg: &dyn charming_bubbletea::Msg) -> Option<String> {
-    use charming_bubbletea::environ::EnvMsg;
-    use charming_bubbletea::profile::ColorProfileMsg;
-    use charming_bubbletea::screen::WindowSizeMsg;
+fn go_fmt(msg: &dyn rusty_bubbletea::Msg) -> Option<String> {
+    use rusty_bubbletea::environ::EnvMsg;
+    use rusty_bubbletea::profile::ColorProfileMsg;
+    use rusty_bubbletea::screen::WindowSizeMsg;
     if let Some(m) = msg.as_any().downcast_ref::<WindowSizeMsg>() {
         return Some(format!(
             "tea.WindowSizeMsg {{Width:{} Height:{}}}",
@@ -182,10 +182,10 @@ fn go_fmt(msg: &dyn charming_bubbletea::Msg) -> Option<String> {
     }
     if let Some(m) = msg.as_any().downcast_ref::<ColorProfileMsg>() {
         let profile = match m.profile {
-            charming_bubbletea::profile::ColorProfile::TrueColor => "TrueColor",
-            charming_bubbletea::profile::ColorProfile::ANSI256 => "ANSI256",
-            charming_bubbletea::profile::ColorProfile::ANSI => "ANSI",
-            charming_bubbletea::profile::ColorProfile::Ascii => "Ascii",
+            rusty_bubbletea::profile::ColorProfile::TrueColor => "TrueColor",
+            rusty_bubbletea::profile::ColorProfile::ANSI256 => "ANSI256",
+            rusty_bubbletea::profile::ColorProfile::ANSI => "ANSI",
+            rusty_bubbletea::profile::ColorProfile::Ascii => "Ascii",
         };
         return Some(format!("tea.ColorProfileMsg {}", profile));
     }

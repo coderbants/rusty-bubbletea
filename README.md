@@ -1,31 +1,27 @@
 <p>
-    <a href="charming_bubbletea.png"><img src="charming_bubbletea.png" width="313" alt="Charming Bubble Tea"></a><br>
-    <a href="https://crates.io/crates/charming-bubbletea"><img src="https://img.shields.io/crates/v/charming-bubbletea.svg" alt="crates.io"></a>
-    <a href="https://github.com/coderbants/charming-bubbletea/actions"><img src="https://github.com/coderbants/charming-bubbletea/actions/workflows/ci.yml/badge.svg" alt="Build Status"></a>
+    <a href="rusty_bubbletea.png"><img src="rusty_bubbletea.png" width="313" alt="Rusty Bubble Tea"></a><br>
+    <a href="https://crates.io/crates/rusty-bubbletea"><img src="https://img.shields.io/crates/v/rusty-bubbletea.svg" alt="crates.io"></a>
+    <a href="https://github.com/coderbants/rusty-bubbletea/actions"><img src="https://github.com/coderbants/rusty-bubbletea/actions/workflows/ci.yml/badge.svg" alt="Build Status"></a>
     <a href="https://www.phorm.ai/query?projectId=a0e324b6-b706-4546-b951-6671ea60c13f"><img src="https://stuff.charm.sh/misc/phorm-badge.svg" alt="phorm.ai"></a>
 </p>
 
-# Charming Bubble Tea (`charming-bubbletea`)
+# Rusty Bubble Tea (`rusty-bubbletea`)
 
-**Charming Bubble Tea** is a complete, from-scratch Rust port of [Bubble Tea](https://github.com/charmbracelet/bubbletea), the Elm-architecture TUI framework that powers Charmbracelet's terminal apps. It tracks upstream Go releases on a rolling basis. 
+**Rusty Bubble Tea** is a complete, from-scratch Rust port of [Bubble Tea](https://github.com/charmbracelet/bubbletea), the Elm-architecture TUI framework that powers Charmbracelet's terminal apps. It tracks upstream Go releases on a rolling basis. **Version policy: the crate version and every release tag must equal the tracked upstream version exactly — never ahead, never behind** (enforced by `scripts/verify_upstream_version.sh` in CI and on every release). It holds a hard goal of **1:1 behavioural, visual and license parity**: the same messages, commands, and rendering output, favoring fidelity to upstream semantics over Rust-native rewrites whenever the two would diverge.
 
-**Version policy: the crate version and every release tag must equal the tracked upstream version exactly — never ahead, never behind** (enforced by `scripts/verify_upstream_version.sh` in CI and on every release).
+It's part of the Rusty port family of the Bubble Tea ecosystem and builds on [rusty-ultraviolet](https://github.com/coderbants/rusty-ultraviolet) (terminal renderer & input), [rusty-lipgloss](https://github.com/coderbants/rusty-lipgloss) (styling), [rusty-x-ansi](https://github.com/coderbants/rusty-x-ansi) (ANSI primitives), and [rusty-colorprofile](https://github.com/coderbants/rusty-colorprofile) — with UI components available in [rusty-bubbles](https://github.com/coderbants/rusty-bubbles).
 
-**1:1 behavioural, visual and license parity**: This project holds a hard goal of producing the same messages, commands, and rendering output, favouring fidelity to upstream semantics over Rust-native rewrites whenever the two would diverge (i.e. consistency with upstream is favoured over idiomatic Rust, which is intended to make keeping the project up-to-date easier over time).
-
-It's part of the Charming port family of the Bubble Tea ecosystem and builds on [charming-ultraviolet](https://github.com/coderbants/charming-ultraviolet) (terminal renderer & input), [charming-lipgloss](https://github.com/coderbants/charming-lipgloss) (styling), [charming-x-ansi](https://github.com/coderbants/charming-x-ansi) (ANSI primitives), and [charming-colorprofile](https://github.com/coderbants/charming-colorprofile) — with UI components available in [charming-bubbles](https://github.com/coderbants/charming-bubbles).
-
-***About bubbletea:***
+***About Bubble Tea***
 
 The fun, functional and stateful way to build terminal apps. A Rust port based on [The Elm Architecture][elm] and upstream [charmbracelet/bubbletea](https://github.com/charmbracelet/bubbletea). Bubble Tea is well-suited for simple and complex terminal applications, either inline, full-window, or a mix of both.
 
 ## Installation
 
 ```sh
-cargo add charming-bubbletea
+cargo add rusty-bubbletea
 ```
 
-Then build your application around a `charming_bubbletea::Program` — see the [tutorial](#tutorial) below to get started.
+Then build your application around a `rusty_bubbletea::Program` — see the [tutorial](#tutorial) below to get started.
 
 <p>
     <img src="https://stuff.charm.sh/bubbletea/bubbletea-example.gif" width="100%" alt="Bubble Tea Example">
@@ -42,8 +38,8 @@ To get started, see the tutorial below, the [examples][examples], the [docs][doc
 Be sure to check out [Bubbles][bubbles], a library of common UI components for Bubble Tea.
 
 <p>
-    <a href="https://github.com/coderbants/charming-bubbles"><img src="https://stuff.charm.sh/bubbles/bubbles-badge.png" width="174" alt="Bubbles Badge"></a>&nbsp;&nbsp;
-    <a href="https://github.com/coderbants/charming-bubbles"><img src="https://stuff.charm.sh/bubbles-examples/textinput.gif" width="400" alt="Text Input Example from Bubbles"></a>
+    <a href="https://github.com/coderbants/rusty-bubbles"><img src="https://stuff.charm.sh/bubbles/bubbles-badge.png" width="174" alt="Bubbles Badge"></a>&nbsp;&nbsp;
+    <a href="https://github.com/coderbants/rusty-bubbles"><img src="https://stuff.charm.sh/bubbles-examples/textinput.gif" width="400" alt="Text Input Example from Bubbles"></a>
 </p>
 
 ---
@@ -66,8 +62,8 @@ Bubble Tea programs are comprised of a **model** that describes the application 
 - **view**, a function that renders the UI based on the data in the model.
 
 ```rust
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::{quit, Cmd, KeyPressMsg, Msg, Program, View};
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::{quit, Cmd, KeyPressMsg, Msg, Program, View};
 use std::collections::HashSet;
 
 struct Model {
@@ -138,7 +134,7 @@ Save that to `main.rs` and run it with `cargo run`:
 
 That's it — the three methods of the [Elm Architecture][elm] are all you need. The `Msg` type is a trait object, so your `update` downcasts the messages you care about (keys, mouse, window size, timers, and any custom messages you define) and ignores the rest. `View` is a declarative description of the frame — plain text plus optional cursor, alt-screen, and mouse-mode settings — which the renderer diffs against the previous frame to produce minimal terminal output.
 
-From here, the best next step is to browse the [examples][examples] directory — every upstream Bubble Tea example is ported there and each one is verified byte-for-byte against the Go build by the E2E harness. For common UI components such as text inputs, spinners and lists, see [charming-bubbles][bubbles].
+From here, the best next step is to browse the [examples][examples] directory — every upstream Bubble Tea example is ported there and each one is verified byte-for-byte against the Go build by the E2E harness. For common UI components such as text inputs, spinners and lists, see [rusty-bubbles][bubbles].
 
 ## License
 

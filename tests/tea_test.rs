@@ -1,4 +1,4 @@
-use charming_bubbletea::{quit, Cmd, Model, Msg, Program, View};
+use rusty_bubbletea::{quit, Cmd, Model, Msg, Program, View};
 
 struct TestModel {
     counter: usize,

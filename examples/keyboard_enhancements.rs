@@ -4,14 +4,14 @@
 //! A simple example illustrating how to enable enhanced keyboard support
 //! (the Kitty keyboard protocol: key disambiguation and key event types).
 
-use charming_bubbletea::color::{request_background_color, BackgroundColorMsg};
-use charming_bubbletea::keyboard::KeyboardEnhancementsMsg;
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::renderer::print_ln;
-use charming_bubbletea::{quit, Cmd, KeyPressMsg, KeyReleaseMsg, Msg, Program, View};
-use charming_lipgloss::border;
-use charming_lipgloss::color::light_dark;
-use charming_lipgloss::{new_style, Color, Style};
+use rusty_bubbletea::color::{request_background_color, BackgroundColorMsg};
+use rusty_bubbletea::keyboard::KeyboardEnhancementsMsg;
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::renderer::print_ln;
+use rusty_bubbletea::{quit, Cmd, KeyPressMsg, KeyReleaseMsg, Msg, Program, View};
+use rusty_lipgloss::border;
+use rusty_lipgloss::color::light_dark;
+use rusty_lipgloss::{new_style, Color, Style};
 
 /// Styles used by the example.
 #[derive(Clone)]

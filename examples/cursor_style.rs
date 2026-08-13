@@ -4,9 +4,9 @@
 //! A simple program demonstrating how to change the terminal cursor style
 //! (block, underline, bar) with the left/right arrow keys.
 
-use charming_bubbletea::cursor::{Cursor, CursorShape};
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::{quit, Cmd, KeyPressMsg, Msg, Program, View};
+use rusty_bubbletea::cursor::{Cursor, CursorShape};
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::{quit, Cmd, KeyPressMsg, Msg, Program, View};
 
 /// A model holding the current cursor shape and blink state.
 struct Model {

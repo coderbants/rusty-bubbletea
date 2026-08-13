@@ -3,9 +3,9 @@
 //!
 //! Prints key events to the terminal above the program and quits on ctrl+c.
 
-use charming_bubbletea::keyboard::KeyboardEnhancements;
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::{Cmd, KeyPressMsg, KeyboardEnhancementsMsg, Msg, Program, View};
+use rusty_bubbletea::keyboard::KeyboardEnhancements;
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::{Cmd, KeyPressMsg, KeyboardEnhancementsMsg, Msg, Program, View};
 
 struct KeyModel;
 
@@ -16,7 +16,7 @@ impl ModelTrait for KeyModel {
 
     fn update(&mut self, msg: &dyn Msg) -> Cmd {
         if let Some(enh) = msg.as_any().downcast_ref::<KeyboardEnhancementsMsg>() {
-            return charming_bubbletea::renderer::print_ln(format_args!(
+            return rusty_bubbletea::renderer::print_ln(format_args!(
                 "Keyboard enhancements: EventTypes: {}",
                 enh.supports_event_types()
             ));
@@ -24,7 +24,7 @@ impl ModelTrait for KeyModel {
 
         if let Some(k) = msg.as_any().downcast_ref::<KeyPressMsg>() {
             if k.0.to_string() == "ctrl+c" {
-                return charming_bubbletea::quit();
+                return rusty_bubbletea::quit();
             }
             // Mirror upstream `fmt.Sprintf("(%T) You pressed: %s", msg, ...)`
             // with Go's type name for KeyPressMsg.
@@ -32,18 +32,18 @@ impl ModelTrait for KeyModel {
             if !k.0.text.is_empty() {
                 format += &format!(" (text: {:?})", k.0.text);
             }
-            return charming_bubbletea::renderer::print_ln(format_args!("{}", format));
+            return rusty_bubbletea::renderer::print_ln(format_args!("{}", format));
         }
 
         if let Some(k) = msg
             .as_any()
-            .downcast_ref::<charming_bubbletea::KeyReleaseMsg>()
+            .downcast_ref::<rusty_bubbletea::KeyReleaseMsg>()
         {
             let mut format = format!("(tea.KeyReleaseMsg) You pressed: {}", k.0);
             if !k.0.text.is_empty() {
                 format += &format!(" (text: {:?})", k.0.text);
             }
-            return charming_bubbletea::renderer::print_ln(format_args!("{}", format));
+            return rusty_bubbletea::renderer::print_ln(format_args!("{}", format));
         }
 
         None

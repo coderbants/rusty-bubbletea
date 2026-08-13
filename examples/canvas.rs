@@ -10,11 +10,11 @@
 //! - The generic `reverse` function is written as a small `reverse` helper on
 //!   `Vec<isize>`.
 
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::screen::WindowSizeMsg;
-use charming_bubbletea::{quit, Cmd, KeyPressMsg, Msg, Program, View};
-use charming_lipgloss::layer::{new_compositor, new_layer, Layer};
-use charming_lipgloss::{new_style, Border, BOTTOM, CENTER};
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::screen::WindowSizeMsg;
+use rusty_bubbletea::{quit, Cmd, KeyPressMsg, Msg, Program, View};
+use rusty_lipgloss::layer::{new_compositor, new_layer, Layer};
+use rusty_lipgloss::{new_style, Border, BOTTOM, CENTER};
 
 /// `charmtone.Oyster`.
 const OYSTER: &str = "#605F6B";
@@ -66,7 +66,7 @@ impl ModelTrait for Model {
 
         let footer = new_style()
             .height(13)
-            .foreground_color(charming_lipgloss::Color::parse(OYSTER))
+            .foreground_color(rusty_lipgloss::Color::parse(OYSTER))
             .align_vertical(BOTTOM)
             .render("Press any key to swap the cards, or q to quit.");
 

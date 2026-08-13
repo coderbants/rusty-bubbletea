@@ -1,4 +1,4 @@
-use charming_bubbletea::{KeyMod, Mouse, MouseButton, MouseClickMsg};
+use rusty_bubbletea::{KeyMod, Mouse, MouseButton, MouseClickMsg};
 
 #[test]
 fn test_v2_mouse_msg() {

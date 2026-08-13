@@ -15,11 +15,11 @@
 
 use std::time::Duration;
 
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::mouse::{MouseClickMsg, MouseMotionMsg, MouseReleaseMsg, MouseWheelMsg};
-use charming_bubbletea::screen::WindowSizeMsg;
-use charming_bubbletea::view::MouseMode;
-use charming_bubbletea::{quit, tick, Cmd, KeyPressMsg, Msg, Program, View};
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::mouse::{MouseClickMsg, MouseMotionMsg, MouseReleaseMsg, MouseWheelMsg};
+use rusty_bubbletea::screen::WindowSizeMsg;
+use rusty_bubbletea::view::MouseMode;
+use rusty_bubbletea::{quit, tick, Cmd, KeyPressMsg, Msg, Program, View};
 
 const FPS: u64 = 60;
 const FREQUENCY: f64 = 7.5;

@@ -5,7 +5,7 @@
 //! current tag; the program exits when a timer fires whose tag still
 //! matches the latest press (i.e. after one second without input).
 
-use charming_bubbletea::{Cmd, KeyPressMsg, Model, Msg, Program, View};
+use rusty_bubbletea::{Cmd, KeyPressMsg, Model, Msg, Program, View};
 use std::time::{Duration, SystemTime};
 
 const DEBOUNCE_DURATION: Duration = Duration::from_secs(1);
@@ -29,7 +29,7 @@ impl Model for DebounceModel {
             self.tag += 1;
             // ...and include a copy of that tag value in the message.
             let tag = self.tag;
-            return charming_bubbletea::tick(DEBOUNCE_DURATION, move |_: SystemTime| {
+            return rusty_bubbletea::tick(DEBOUNCE_DURATION, move |_: SystemTime| {
                 Some(Box::new(ExitMsg(tag)))
             });
         }
@@ -41,7 +41,7 @@ impl Model for DebounceModel {
             // the way. If that's the case, ignore it. Otherwise the debounce
             // timeout has passed and this message is a valid debounced one.
             if exit.0 == self.tag {
-                return charming_bubbletea::quit();
+                return rusty_bubbletea::quit();
             }
         }
         None

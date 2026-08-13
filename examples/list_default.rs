@@ -5,15 +5,15 @@
 
 use std::any::Any;
 
-use charming_bubbles::list;
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::screen::WindowSizeMsg;
-use charming_bubbletea::{quit, Cmd, KeyPressMsg, Msg, Program, View};
-use charming_lipgloss::new_style;
+use rusty_bubbles::list;
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::screen::WindowSizeMsg;
+use rusty_bubbletea::{quit, Cmd, KeyPressMsg, Msg, Program, View};
+use rusty_lipgloss::new_style;
 
 /// DocStyle wraps the whole list with a margin, mirroring the upstream
 /// `docStyle` global.
-fn doc_style() -> charming_lipgloss::Style {
+fn doc_style() -> rusty_lipgloss::Style {
     new_style().margin(&[1, 2])
 }
 

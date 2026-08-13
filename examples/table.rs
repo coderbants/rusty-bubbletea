@@ -4,10 +4,10 @@
 //! A table of the world's largest cities. Press enter to "go to" the selected
 //! city, esc to toggle focus on the table, and q/ctrl+c to quit.
 
-use charming_bubbles::table;
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::{batch, print_f, quit, Cmd, KeyPressMsg, Msg, Program, View};
-use charming_lipgloss::{new_style, Border, Color, Style};
+use rusty_bubbles::table;
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::{batch, print_f, quit, Cmd, KeyPressMsg, Msg, Program, View};
+use rusty_lipgloss::{new_style, Border, Color, Style};
 
 fn base_style() -> Style {
     new_style()

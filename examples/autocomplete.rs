@@ -10,13 +10,13 @@
 //! port shells out to `curl` (via `std::process::Command`) instead, since no
 //! HTTP client is available in the dependency tree.
 
-use charming_bubbles::help;
-use charming_bubbles::key;
-use charming_bubbles::textinput;
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::{batch, quit, Cmd, KeyPressMsg, Msg, Program, View};
-use charming_lipgloss::join::join_vertical;
-use charming_lipgloss::{new_style, Color, LEFT};
+use rusty_bubbles::help;
+use rusty_bubbles::key;
+use rusty_bubbles::textinput;
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::{batch, quit, Cmd, KeyPressMsg, Msg, Program, View};
+use rusty_lipgloss::join::join_vertical;
+use rusty_lipgloss::{new_style, Color, LEFT};
 
 const REPOS_URL: &str = "https://api.github.com/orgs/charmbracelet/repos";
 
@@ -248,7 +248,7 @@ impl ModelTrait for Model {
 
         let mut v = View::new(&str);
         if let Some(mut c) = self.text_input.cursor() {
-            c.position.y += charming_lipgloss::size::height(&self.header_view());
+            c.position.y += rusty_lipgloss::size::height(&self.header_view());
             v.cursor = Some(c);
         }
         v

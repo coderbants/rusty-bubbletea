@@ -4,9 +4,9 @@
 //! A simple program that handles losing and acquiring focus, with focus
 //! reporting toggled by the `t` key.
 
-use charming_bubbletea::focus::{BlurMsg, FocusMsg};
-use charming_bubbletea::model::Model as ModelTrait;
-use charming_bubbletea::{quit, Cmd, KeyPressMsg, Msg, Program, View};
+use rusty_bubbletea::focus::{BlurMsg, FocusMsg};
+use rusty_bubbletea::model::Model as ModelTrait;
+use rusty_bubbletea::{quit, Cmd, KeyPressMsg, Msg, Program, View};
 
 /// A model tracking the focus state and whether focus reporting is enabled.
 struct Model {

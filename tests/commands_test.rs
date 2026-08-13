@@ -1,4 +1,4 @@
-use charming_bubbletea::{batch, quit, sequence};
+use rusty_bubbletea::{batch, quit, sequence};
 
 #[test]
 fn test_commands() {

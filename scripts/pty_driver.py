@@ -43,12 +43,15 @@ def run(cmd, args, width, height, keys, delay, settle, timeout, gap=0.4):
     sent_at = None
     exited = False
     while time.time() - start < timeout:
-        # Send the key sequence once after `delay` seconds. The child may not
-        # have opened the slave yet (macOS pty writes then fail with EIO), so
-        # hold the keys until the child has been alive for at least 100ms.
-        # Phases separated by '|' are sent `gap` seconds apart, letting
-        # multi-key scripts land on deterministic render boundaries.
-        if not sent and time.time() - start >= delay:
+        # Send the key sequence once after `delay` seconds AND after the
+        # child has produced its first output (a cold-started binary under
+        # load can otherwise miss its first render window). The child may
+        # not have opened the slave yet (macOS pty writes then fail with
+        # EIO), so hold the keys until the child has been alive for at
+        # least 100ms. Phases separated by '|' are sent `gap` seconds
+        # apart, letting multi-key scripts land on deterministic render
+        # boundaries.
+        if not sent and time.time() - start >= delay and len(out) > 0:
             # For early sends (delay < 0.1) the write races the child's
             # slave-open; the retry loop below handles EIO. For later sends,
             # hold to 150ms so the child is guaranteed to be up.

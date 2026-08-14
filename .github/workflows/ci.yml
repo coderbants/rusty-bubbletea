@@ -112,7 +112,7 @@ jobs:
       - name: Docgen
         run: cargo doc --no-deps
       - name: Test (all targets, all integration tests)
-        run: cargo test --all-targets
+        run: cargo test --all-targets -- --test-threads=1
       - name: Prepare e2e fixtures
         run: |
           # The file_picker spec expects the macOS-style home folders that

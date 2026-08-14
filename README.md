@@ -2,6 +2,8 @@
     <a href="rusty-bubbletea.png"><img src="rusty-bubbletea.png" width="313" alt="Rusty Bubble Tea"></a><br>
     <a href="https://crates.io/crates/rusty-bubbletea"><img src="https://img.shields.io/crates/v/rusty-bubbletea.svg" alt="crates.io"></a>
     <a href="https://github.com/coderbants/rusty-bubbletea/actions"><img src="https://github.com/coderbants/rusty-bubbletea/actions/workflows/ci.yml/badge.svg" alt="Build Status"></a>
+    <a href="https://app.codecov.io/gh/coderbants/rusty-bubbletea"><img src="https://codecov.io/gh/coderbants/rusty-bubbletea/branch/dev/graph/badge.svg" alt="codecov"></a>
+
 </p>
 
 # Rusty Bubble Tea (`rusty-bubbletea`)

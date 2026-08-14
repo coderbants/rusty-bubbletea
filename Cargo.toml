@@ -1,5 +1,6 @@
 [package]
 name = "rusty-bubbletea"
+exclude = ["POLICIES.md"]
 version = "2.0.8"
 edition = "2021"
 description = "Cleanroom Rust port of Charmbracelet's Bubble Tea (v2.0.8) TUI Elm architecture framework"

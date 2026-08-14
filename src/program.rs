@@ -229,9 +229,7 @@ impl<M: Model> Program<M> {
         {
             if let Ok(mut buf) = self.startup_buf.lock() {
                 if let Some(b) = buf.as_mut() {
-                    b.extend_from_slice(
-                        rusty_x_ansi::background::REQUEST_CURSOR_COLOR.as_bytes(),
-                    );
+                    b.extend_from_slice(rusty_x_ansi::background::REQUEST_CURSOR_COLOR.as_bytes());
                 }
             }
         } else if let Some(cap) = processed_msg
@@ -306,9 +304,7 @@ impl<M: Model> Program<M> {
             .downcast_ref::<ColorProfileMsg>()
         {
             let p = match profile.profile {
-                crate::profile::ColorProfile::TrueColor => {
-                    rusty_colorprofile::Profile::TrueColor
-                }
+                crate::profile::ColorProfile::TrueColor => rusty_colorprofile::Profile::TrueColor,
                 crate::profile::ColorProfile::ANSI256 => rusty_colorprofile::Profile::Ansi256,
                 crate::profile::ColorProfile::ANSI => rusty_colorprofile::Profile::Ansi,
                 crate::profile::ColorProfile::Ascii => rusty_colorprofile::Profile::Ascii,
@@ -449,10 +445,8 @@ impl<M: Model> Program<M> {
         let input_tx = tx.clone();
         thread::spawn(move || {
             let reader: Box<dyn std::io::Read + Send> = Box::new(std::io::stdin());
-            let mut tr = rusty_ultraviolet::terminal_reader::new_terminal_reader(
-                reader,
-                "xterm-256color",
-            );
+            let mut tr =
+                rusty_ultraviolet::terminal_reader::new_terminal_reader(reader, "xterm-256color");
             tr.set_legacy(rusty_ultraviolet::LegacyKeyEncoding::default());
             let (dec_tx, dec_rx) = std::sync::mpsc::channel::<rusty_ultraviolet::DecodedEvent>();
             let streamer = std::thread::spawn(move || {

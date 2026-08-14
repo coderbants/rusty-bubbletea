@@ -87,10 +87,7 @@ pub fn new_cursed_renderer(
 
 impl CursedRenderer {
     /// SetLogger sets the logger for the renderer.
-    pub fn set_logger(
-        &mut self,
-        logger: Option<Box<dyn rusty_ultraviolet::Logger + Send + Sync>>,
-    ) {
+    pub fn set_logger(&mut self, logger: Option<Box<dyn rusty_ultraviolet::Logger + Send + Sync>>) {
         self.logger = logger;
     }
 

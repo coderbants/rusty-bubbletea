@@ -12,9 +12,7 @@ use rusty_bubbles::progress;
 use rusty_bubbles::spinner;
 use rusty_bubbletea::model::Model as ModelTrait;
 use rusty_bubbletea::screen::WindowSizeMsg;
-use rusty_bubbletea::{
-    batch, print_f, quit, sequence, tick, Cmd, KeyPressMsg, Msg, Program, View,
-};
+use rusty_bubbletea::{batch, print_f, quit, sequence, tick, Cmd, KeyPressMsg, Msg, Program, View};
 use rusty_lipgloss::size;
 use rusty_lipgloss::{new_style, Color, Style};
 

@@ -4,3 +4,4 @@ Cargo.lock
 
 # Local artifacts
 /scripts/failures
+/tmp

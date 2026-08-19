@@ -777,3 +777,110 @@ fn check_optimized_movements() -> (bool, bool) {
         (true, true)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rusty_ultraviolet as uv;
+
+    #[test]
+    fn test_decoded_to_msg_events() {
+        let k = uv::Key {
+            text: "a".to_string(),
+            mod_: uv::KeyMod(0),
+            code: 'a' as u32,
+            shifted_code: 0,
+            base_code: 0,
+            is_repeat: false,
+        };
+        let ev = uv::DecodedEvent::KeyPress(k.clone());
+        let msg = decoded_to_msg(ev).unwrap();
+        assert!(msg.as_ref().as_any().is::<KeyPressMsg>());
+
+        let ev_rel = uv::DecodedEvent::KeyRelease(k);
+        let msg_rel = decoded_to_msg(ev_rel).unwrap();
+        assert!(msg_rel.as_ref().as_any().is::<KeyReleaseMsg>());
+
+        let m = uv::Mouse {
+            x: 10,
+            y: 20,
+            button: uv::MOUSE_LEFT,
+            mod_: uv::KeyMod(0),
+        };
+        assert!(decoded_to_msg(uv::DecodedEvent::MouseClick(m))
+            .unwrap()
+            .as_ref()
+            .as_any()
+            .is::<MouseClickMsg>());
+        assert!(decoded_to_msg(uv::DecodedEvent::MouseRelease(m))
+            .unwrap()
+            .as_ref()
+            .as_any()
+            .is::<MouseReleaseMsg>());
+        assert!(decoded_to_msg(uv::DecodedEvent::MouseWheel(m))
+            .unwrap()
+            .as_ref()
+            .as_any()
+            .is::<MouseWheelMsg>());
+        assert!(decoded_to_msg(uv::DecodedEvent::MouseMotion(m))
+            .unwrap()
+            .as_ref()
+            .as_any()
+            .is::<MouseMotionMsg>());
+
+        assert!(decoded_to_msg(uv::DecodedEvent::WindowSize(uv::Size {
+            width: 80,
+            height: 24
+        }))
+        .unwrap()
+        .as_ref()
+        .as_any()
+        .is::<WindowSizeMsg>());
+        assert!(decoded_to_msg(uv::DecodedEvent::Paste("pasted".into()))
+            .unwrap()
+            .as_ref()
+            .as_any()
+            .is::<PasteMsg>());
+        assert!(decoded_to_msg(uv::DecodedEvent::Focus)
+            .unwrap()
+            .as_ref()
+            .as_any()
+            .is::<FocusMsg>());
+        assert!(decoded_to_msg(uv::DecodedEvent::Blur)
+            .unwrap()
+            .as_ref()
+            .as_any()
+            .is::<BlurMsg>());
+        assert!(decoded_to_msg(uv::DecodedEvent::KeyboardEnhancements(1))
+            .unwrap()
+            .as_ref()
+            .as_any()
+            .is::<KeyboardEnhancementsMsg>());
+        assert!(
+            decoded_to_msg(uv::DecodedEvent::CursorPosition { x: 5, y: 6 })
+                .unwrap()
+                .as_ref()
+                .as_any()
+                .is::<CursorPositionMsg>()
+        );
+        assert!(decoded_to_msg(uv::DecodedEvent::Capability("cap".into()))
+            .unwrap()
+            .as_ref()
+            .as_any()
+            .is::<crate::termcap::CapabilityMsg>());
+        assert!(
+            decoded_to_msg(uv::DecodedEvent::TerminalVersion("v1".into()))
+                .unwrap()
+                .as_ref()
+                .as_any()
+                .is::<crate::xterm::TerminalVersionMsg>()
+        );
+    }
+
+    #[test]
+    fn test_program_error_display() {
+        assert_eq!(format!("{}", ProgramError::Killed), ERR_PROGRAM_KILLED);
+        assert_eq!(format!("{}", ProgramError::Interrupted), ERR_INTERRUPTED);
+        assert_eq!(format!("{}", ProgramError::Panic), ERR_PROGRAM_PANIC);
+    }
+}

@@ -1,8 +1,8 @@
 <p align="center">
-    <a href="rusty-bubbletea.png"><img src="rusty-bubbletea.png" width="313" alt="Rusty Bubble Tea"></a><br>
+    <a href="https://raw.githubusercontent.com/coderbants/rusty-bubbletea/dev/rusty-bubbletea.png"><img src="https://raw.githubusercontent.com/coderbants/rusty-bubbletea/dev/rusty-bubbletea.png" width="313" alt="Rusty Bubble Tea"></a><br>
     <a href="https://crates.io/crates/rusty-bubbletea"><img src="https://img.shields.io/crates/v/rusty-bubbletea.svg" alt="crates.io"></a>
     <a href="https://github.com/coderbants/rusty-bubbletea/actions"><img src="https://github.com/coderbants/rusty-bubbletea/actions/workflows/ci.yml/badge.svg" alt="Build Status"></a>
-    <a href="coverage.svg"><img src="coverage.svg" alt="coverage"></a>
+    <a href="https://raw.githubusercontent.com/coderbants/rusty-bubbletea/dev/coverage.svg"><img src="https://raw.githubusercontent.com/coderbants/rusty-bubbletea/dev/coverage.svg" alt="coverage"></a>
 
 </p>
 

@@ -10,13 +10,13 @@ upstream tag `v2.0.8`, checked out locally in `upstream-go/` (gitignored).
 
 | Upstream Go File | Rust Equivalent / Status | Notes / Description |
 | :--- | :--- | :--- |
-| `tea.go` | `src/lib.rs`, `src/view.rs`, `src/program.rs` | Core Elm architecture: `Model`, `Msg`, `Cmd`, `Program`, `View` |
-| `tea_test.go` | `tests/tea_test.rs` | Core program unit tests |
+| `tea.go` | `src/lib.rs`, `src/view.rs`, `src/program.rs` | Core Elm architecture: `Model`, `Msg`, `Cmd`, `Program`, `View`; `Program` owns one-shot lifecycle state, external handles, configured I/O, cancellation, panic recovery, and renderer cleanup |
+| `tea_test.go` | `tests/tea_test.rs` | Core program unit tests, including startup contract, headless lifecycle, cancellation, panic recovery, handle cleanup, and protocol-output ordering |
 | `clipboard.go` | `src/clipboard.rs` | OSC52 clipboard ops (`set_clipboard`, `read_clipboard`, `ClipboardMsg`) |
 | `color.go` | `src/color.rs` — **Refactored** | Response messages wrap `rusty-ultraviolet` color events; `is_dark` via the upstream HSL logic | Color requests and messages (`request_background_color`, `BackgroundColorMsg`, …) |
-| `commands.go` | `src/commands.rs` | Built-in commands (`quit`, `batch`, `sequence`, `tick`, `every`, `request_window_size`) |
+| `commands.go` | `src/commands.rs` | Built-in commands (`quit`, `batch`, `sequence`, `tick`, `every`, `request_window_size`); no-op commands are removed while singleton command behavior remains deterministic |
 | `commands_test.go` | `tests/commands_test.rs` | Command suite tests |
-| `cursed_renderer.go` | `src/cursed_renderer.rs` | CursedRenderer: declarative view frames, ANSI diffing, unmanaged lines |
+| `cursed_renderer.go` | `src/cursed_renderer.rs` | CursedRenderer: declarative view frames, ANSI diffing, unmanaged lines, and direct protocol output ahead of buffered frames |
 | `cursed_renderer_test.go` | `tests/tea_test.rs` | Renderer tests |
 | `cursor.go` | `src/cursor.rs` | Cursor position/shape, `request_cursor_position` |
 | `environ.go` | `src/environ.rs` | `EnvMsg` environment variables |
@@ -33,12 +33,12 @@ upstream tag `v2.0.8`, checked out locally in `upstream-go/` (gitignored).
 | `mouse.go` | `src/mouse.rs` | `MouseButton`, `Mouse`, typed mouse messages |
 | `mouse_test.go` | `tests/mouse_test.rs` | Mouse suite tests |
 | `nil_renderer.go` | `src/nil_renderer.rs` | No-op renderer |
-| `options.go` | `src/options.rs` | `ProgramOptions` constructors |
+| `options.go` | `src/options.rs` | `ProgramOptions` constructors; explicit input disabling is tracked separately from default stdin and FPS is normalized to the documented 60–120 bounds |
 | `options_test.go` | `tests/commands_test.rs` | Option tests |
 | `paste.go` | `src/paste.rs` | Bracketed paste messages |
 | `profile.go` | `src/profile.rs` | `ColorProfileMsg` |
 | `raw.go` | `src/raw.rs` | `raw` command sending ANSI sequences |
-| `renderer.go` | `src/renderer.rs` | `Renderer` trait |
+| `renderer.go` | `src/renderer.rs` | `Renderer` trait, including the direct protocol-output hook used before buffered frame flushes |
 | `screen.go` | `src/screen.rs` | `WindowSizeMsg`, `clear_screen`, `ModeReportMsg` |
 | `screen_test.go` | `tests/commands_test.rs` | Screen tests |
 | `signals_unix.go` | `src/signals_unix.rs` | SIGWINCH resize listener |
@@ -170,14 +170,15 @@ in the Support Files section.
 | :--- | :--- | :--- |
 | `LICENSE` | `LICENSE` | MIT License (matching upstream copyright) |
 | `README.md` | `README.md` | Documented Rust port header with graphics & links |
+| Repository lifecycle guide | `docs/src/lib.rs` | User-facing documentation anchor for `ProgramHandle`, headless options, cancellation, and graceful versus error shutdown |
 | `UPGRADE_GUIDE_V2.md` | `README.md` (notes) | v1 -> v2 migration guidance summarized in README |
-| `go.mod` / `go.sum` | `Cargo.toml` | Dependency manifest (Go modules -> Cargo crates) |
+| `go.mod` / `go.sum` | `Cargo.toml` | Dependency manifest (Go modules -> Cargo crates); candidate declares the supported Rust 1.91 toolchain floor |
 | `examples/go.mod` / `examples/go.sum` / `tutorials/go.mod` / `tutorials/go.sum` | `Cargo.toml` | Example-module manifests (deps like bubbles, glamour, harmonica are example-only) |
 | `examples/*/README.md` and `examples/*/*.gif` | `examples/` docs | Per-example docs/assets; retained as upstream documentation references |
 | `examples/isbn-form/isbn-form.tape` | (asset) | VHS recording asset; not applicable to the Rust crate |
 | `examples/table/demo.tape` | (asset) | VHS recording asset; not applicable to the Rust crate |
 | `Taskfile.yaml` / `.goreleaser.yml` / `.golangci.yml` | `.github/workflows/publish.yml` | Build/lint/release config -> CI workflow |
-| `.github/workflows/*` | `.github/workflows/publish.yml` | CI/CD -> Rust publish workflow + example parity check |
+| `.github/workflows/*` | `.github/workflows/publish.yml` | CI/CD -> Rust CI/publish workflows, example parity, and trusted default-branch badge publication |
 | `.github/ISSUE_TEMPLATE/*` / `.github/dependabot.yml` / `.gitattributes` / `.gitignore` / `.editorconfig` | `.gitignore` | Process/config files; not applicable to the Rust crate |
 | `testdata/*.golden` | `tests/*.rs` | Golden outputs accounted for by test assertions |
 
@@ -205,6 +206,6 @@ in the Support Files section.
 - Port-wide fixes required for parity: kitty-bitset `KeyMod` constants, SGR emission order
   (colors before attrs, 39/49/59 default-color resets, attr reset codes 22/23/24/25/27/8/29),
   pen reset before pending spaces in `renderLine`, go-exact `Duration::String()`, the color
-  profile applied to the renderer (env-detect + ColorProfileMsg), OSC queries buffered and
-  flushed with the first render (ticker-only), final model render on graceful quit, and the
+  profile applied to the renderer (env-detect + ColorProfileMsg), protocol and OSC queries
+  emitted ahead of buffered renderer startup output, final model render on graceful quit, and the
   start-up message burst (WindowSizeMsg + EnvMsg + ColorProfileMsg) matching upstream.

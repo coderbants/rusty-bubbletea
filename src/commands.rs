@@ -1,11 +1,15 @@
 //! Cleanroom Rust port of upstream Go source file: `commands.go`
 //! Upstream Target Tag / Version: `v2.0.8`
 //!
-//! <public-docs>
+//! <user-docs>
 //! # Commands
 //!
 //! Built-in command functions (`batch`, `sequence`, `every`, `tick`, `request_window_size`).
-//! </public-docs>
+//! </user-docs>
+//!
+//! Maintainer note: command trees are values until the program event loop
+//! executes them. `batch` preserves concurrent execution, while `sequence`
+//! preserves source order, including for nested command trees.
 
 use crate::model::{Cmd, Msg};
 use std::fmt;
@@ -76,15 +80,10 @@ pub fn interrupt() -> Cmd {
 /// Batch performs a bunch of commands concurrently with no ordering guarantees
 /// about the results. Use `batch` to return several commands.
 pub fn batch(cmds: Vec<Cmd>) -> Cmd {
-    let mut valid_cmds = Vec::new();
-    for cmd in cmds {
-        if cmd.is_some() {
-            valid_cmds.push(cmd);
-        }
-    }
+    let valid_cmds = retain_commands(cmds);
     match valid_cmds.len() {
         0 => None,
-        1 => valid_cmds.into_iter().next().unwrap(),
+        1 => valid_cmds.into_iter().next().flatten(),
         _ => Some(Box::new(move || Some(Box::new(BatchMsg(valid_cmds))))),
     }
 }
@@ -92,17 +91,18 @@ pub fn batch(cmds: Vec<Cmd>) -> Cmd {
 /// Sequence runs the given commands one at a time, in order. Contrast this with
 /// `batch`, which runs commands concurrently.
 pub fn sequence(cmds: Vec<Cmd>) -> Cmd {
-    let mut valid_cmds = Vec::new();
-    for cmd in cmds {
-        if cmd.is_some() {
-            valid_cmds.push(cmd);
-        }
-    }
+    let valid_cmds = retain_commands(cmds);
     match valid_cmds.len() {
         0 => None,
-        1 => valid_cmds.into_iter().next().unwrap(),
+        1 => valid_cmds.into_iter().next().flatten(),
         _ => Some(Box::new(move || Some(Box::new(SequenceMsg(valid_cmds))))),
     }
+}
+
+/// Drops no-op commands while retaining the command container shape expected
+/// by the event-loop executor.
+fn retain_commands(cmds: Vec<Cmd>) -> Vec<Cmd> {
+    cmds.into_iter().filter(|cmd| cmd.is_some()).collect()
 }
 
 /// Every is a command that ticks in sync with the system clock. So, if you

@@ -31,7 +31,13 @@ impl Model for TestModel {
         quit()
     }
 
-    fn update(&mut self, _msg: &dyn Msg) -> Cmd {
+    fn update(&mut self, msg: &dyn Msg) -> Cmd {
+        if msg.as_any().is::<WindowSizeMsg>()
+            || msg.as_any().is::<EnvMsg>()
+            || msg.as_any().is::<ColorProfileMsg>()
+        {
+            return None;
+        }
         self.counter += 1;
         quit()
     }
@@ -41,12 +47,201 @@ impl Model for TestModel {
     }
 }
 
+#[derive(Default)]
+struct StartupModel {
+    window: Option<(usize, usize)>,
+    environment: Option<String>,
+    profile: Option<ColorProfile>,
+}
+
+impl Model for StartupModel {
+    fn update(&mut self, msg: &dyn Msg) -> Cmd {
+        if let Some(window) = msg.as_any().downcast_ref::<WindowSizeMsg>() {
+            self.window = Some((window.width, window.height));
+        } else if let Some(environment) = msg.as_any().downcast_ref::<EnvMsg>() {
+            self.environment = Some(environment.getenv("APP_MODE"));
+        } else if let Some(profile) = msg.as_any().downcast_ref::<ColorProfileMsg>() {
+            self.profile = Some(profile.profile);
+            return quit();
+        }
+        None
+    }
+
+    fn view(&self) -> View {
+        View::new("startup")
+    }
+}
+
+struct PanicModel;
+
+impl Model for PanicModel {
+    fn init(&self) -> Cmd {
+        panic!("intentional lifecycle panic")
+    }
+
+    fn update(&mut self, _msg: &dyn Msg) -> Cmd {
+        None
+    }
+
+    fn view(&self) -> View {
+        View::new("panic")
+    }
+}
+
 /// Full interactive program run.
 #[test]
 fn test_v2_program_run() {
     let model = TestModel { counter: 0 };
-    let prog = Program::new(model);
+    let prog = Program::new(model).with_options(
+        ProgramOptions::default()
+            .without_renderer()
+            .with_input(None),
+    );
     assert_eq!(prog.run().unwrap().counter, 0);
+}
+
+#[test]
+fn test_program_handle_queues_prestart_quit_and_waits_for_cleanup() {
+    let program = Program::new(TestModel { counter: 0 }).with_options(
+        ProgramOptions::default()
+            .without_renderer()
+            .with_input(None),
+    );
+    let handle = program.handle();
+    handle.quit();
+
+    let runner = std::thread::spawn(move || {
+        program
+            .run()
+            .map(|model| model.counter)
+            .map_err(|error| error.to_string())
+    });
+    let model_counter = runner
+        .join()
+        .expect("program runner thread")
+        .expect("quit succeeds");
+    handle.wait();
+    assert_eq!(model_counter, 0);
+}
+
+#[test]
+fn test_program_handle_kill_returns_killed_after_cleanup() {
+    let program = Program::new(TestModel { counter: 0 }).with_options(
+        ProgramOptions::default()
+            .without_renderer()
+            .with_input(None),
+    );
+    let handle = program.handle();
+    handle.kill();
+
+    let runner = std::thread::spawn(move || {
+        program
+            .run()
+            .map(|_| String::new())
+            .map_err(|error| error.to_string())
+    });
+    let error = runner
+        .join()
+        .expect("program runner thread")
+        .expect_err("kill should return an error");
+    handle.wait();
+    assert_eq!(error, rusty_bubbletea::program::ERR_PROGRAM_KILLED);
+}
+
+#[test]
+fn test_program_uses_configured_startup_contract() {
+    let options = ProgramOptions::default()
+        .without_renderer()
+        .with_input(None)
+        .with_window_size(100, 40)
+        .with_environment(vec![
+            ("TERM".to_string(), "xterm-256color".to_string()),
+            ("APP_MODE".to_string(), "test".to_string()),
+        ])
+        .with_color_profile(ColorProfile::ANSI256);
+    let model = Program::new(StartupModel::default())
+        .with_options(options)
+        .run()
+        .expect("configured startup should quit cleanly");
+
+    assert_eq!(model.window, Some((100, 40)));
+    assert_eq!(model.environment.as_deref(), Some("test"));
+    assert_eq!(model.profile, Some(ColorProfile::ANSI256));
+}
+
+#[test]
+fn test_program_context_cancellation_returns_killed() {
+    let context = Context::new();
+    context.cancel();
+    let result = Program::new(TestModel { counter: 0 })
+        .with_options(
+            ProgramOptions::default()
+                .without_renderer()
+                .with_input(None)
+                .with_context(context),
+        )
+        .run();
+
+    let error = result.err().expect("cancelled program should fail");
+    assert_eq!(
+        error.downcast_ref::<rusty_bubbletea::program::ProgramError>(),
+        Some(&rusty_bubbletea::program::ProgramError::Killed)
+    );
+}
+
+#[test]
+fn test_program_recovers_from_init_panic() {
+    let result = Program::new(PanicModel)
+        .with_options(
+            ProgramOptions::default()
+                .without_renderer()
+                .with_input(None),
+        )
+        .run();
+
+    let error = result
+        .err()
+        .expect("panic should be converted to ProgramError");
+    assert_eq!(
+        error.downcast_ref::<rusty_bubbletea::program::ProgramError>(),
+        Some(&rusty_bubbletea::program::ProgramError::Panic)
+    );
+}
+
+#[test]
+fn test_protocol_query_precedes_buffered_renderer_startup_output() {
+    let output = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+    struct RecordingWriter(std::sync::Arc<std::sync::Mutex<Vec<u8>>>);
+    impl std::io::Write for RecordingWriter {
+        fn write(&mut self, data: &[u8]) -> std::io::Result<usize> {
+            let mut output = self
+                .0
+                .lock()
+                .map_err(|_| std::io::Error::other("recording writer lock poisoned"))?;
+            output.extend_from_slice(data);
+            Ok(data.len())
+        }
+
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+
+    let result = Program::new(TestModel { counter: 0 })
+        .with_options(
+            ProgramOptions::default()
+                .with_input(None)
+                .with_output(Box::new(RecordingWriter(output.clone())))
+                .with_environment(vec![("TERM".to_string(), "xterm-256color".to_string())]),
+        )
+        .run();
+    assert!(result.is_ok());
+
+    let bytes = output.lock().expect("recorded output lock").clone();
+    assert!(
+        bytes.starts_with(b"\x1b[?2026$p\x1b[?2027$p"),
+        "protocol query must precede buffered renderer startup output: {bytes:?}"
+    );
 }
 
 #[derive(Default)]
@@ -180,6 +375,11 @@ fn test_options_and_context() {
     assert!(opts.context.is_some());
     assert!(opts.filter.is_some());
     assert!(opts.environ.is_some());
+    assert_eq!(ProgramOptions::<TestModel>::default().with_fps(0).fps, 60);
+    assert_eq!(
+        ProgramOptions::<TestModel>::default().with_fps(121).fps,
+        120
+    );
 }
 
 #[test]
@@ -204,6 +404,12 @@ fn test_commands_and_messages() {
     let seq_msg = msg.as_ref().as_any().downcast_ref::<SequenceMsg>().unwrap();
     assert_eq!(seq_msg.0.len(), 2);
     assert!(format!("{:?}", seq_msg).contains("2 commands"));
+
+    let singleton = commands::batch(vec![None, commands::quit()]);
+    let singleton_msg = (singleton.expect("one command should be retained"))()
+        .expect("retained command should produce a message");
+    assert!(singleton_msg.as_ref().as_any().is::<QuitMsg>());
+    assert!(commands::sequence(vec![None, None]).is_none());
 
     let rsz = commands::request_window_size();
     assert!(rsz.is_some());

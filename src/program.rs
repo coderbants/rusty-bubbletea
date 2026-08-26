@@ -260,9 +260,9 @@ impl<M: Model> Program<M> {
         }
     }
 
-    fn write_renderer(&self, text: &str) {
+    fn write_direct(&self, text: &str) {
         if let Some(mut renderer) = self.renderer_guard() {
-            let _ = renderer.write_string(text);
+            let _ = renderer.write_direct(text);
         }
     }
 
@@ -301,19 +301,19 @@ impl<M: Model> Program<M> {
             .as_any()
             .is::<crate::color::RequestBackgroundColorMsg>()
         {
-            self.write_renderer(rusty_x_ansi::background::REQUEST_BACKGROUND_COLOR);
+            self.write_direct(rusty_x_ansi::background::REQUEST_BACKGROUND_COLOR);
         } else if processed_msg
             .as_ref()
             .as_any()
             .is::<crate::color::RequestForegroundColorMsg>()
         {
-            self.write_renderer(rusty_x_ansi::background::REQUEST_FOREGROUND_COLOR);
+            self.write_direct(rusty_x_ansi::background::REQUEST_FOREGROUND_COLOR);
         } else if processed_msg
             .as_ref()
             .as_any()
             .is::<crate::color::RequestCursorColorMsg>()
         {
-            self.write_renderer(rusty_x_ansi::background::REQUEST_CURSOR_COLOR);
+            self.write_direct(rusty_x_ansi::background::REQUEST_CURSOR_COLOR);
         } else if let Some(cap) = processed_msg
             .as_ref()
             .as_any()
@@ -326,7 +326,7 @@ impl<M: Model> Program<M> {
                 seq.push_str(&format!("{byte:02X}"));
             }
             seq.push_str("\x1b\\");
-            self.write_renderer(&seq);
+            self.write_direct(&seq);
             return Ok(false);
         } else if processed_msg
             .as_ref()
@@ -335,7 +335,7 @@ impl<M: Model> Program<M> {
         {
             // Mirror upstream `p.execute(ansi.RequestNameVersion)` using the
             // configured renderer output rather than process-global stdout.
-            self.write_renderer("\x1b[>q");
+            self.write_direct("\x1b[>q");
             return Ok(false);
         } else if processed_msg.as_ref().as_any().is::<RequestWindowSizeMsg>() {
             let (width, height) = configured_window_size(&self.options);
@@ -370,7 +370,7 @@ impl<M: Model> Program<M> {
             return Ok(false);
         } else if processed_msg.as_ref().as_any().is::<RawMsg>() {
             if let Some(raw) = processed_msg.as_ref().as_any().downcast_ref::<RawMsg>() {
-                self.write_renderer(&raw.0);
+                self.write_direct(&raw.0);
             }
             return Ok(false);
         } else if let Some(_env) = processed_msg.as_ref().as_any().downcast_ref::<EnvMsg>() {
@@ -604,7 +604,7 @@ impl<M: Model> Program<M> {
         }));
 
         if !self.options.disable_renderer && should_query_synchronized_output(&env_strings) {
-            self.write_renderer("\x1b[?2026$p\x1b[?2027$p");
+            self.write_direct("\x1b[?2026$p\x1b[?2027$p");
         }
 
         self.render_view(self.model.view());

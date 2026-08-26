@@ -11,12 +11,12 @@ upstream tag `v2.0.8`, checked out locally in `upstream-go/` (gitignored).
 | Upstream Go File | Rust Equivalent / Status | Notes / Description |
 | :--- | :--- | :--- |
 | `tea.go` | `src/lib.rs`, `src/view.rs`, `src/program.rs` | Core Elm architecture: `Model`, `Msg`, `Cmd`, `Program`, `View`; `Program` owns one-shot lifecycle state, external handles, configured I/O, cancellation, panic recovery, and renderer cleanup |
-| `tea_test.go` | `tests/tea_test.rs` | Core program unit tests, including startup contract, headless lifecycle, cancellation, panic recovery, and handle cleanup |
+| `tea_test.go` | `tests/tea_test.rs` | Core program unit tests, including startup contract, headless lifecycle, cancellation, panic recovery, handle cleanup, and protocol-output ordering |
 | `clipboard.go` | `src/clipboard.rs` | OSC52 clipboard ops (`set_clipboard`, `read_clipboard`, `ClipboardMsg`) |
 | `color.go` | `src/color.rs` — **Refactored** | Response messages wrap `rusty-ultraviolet` color events; `is_dark` via the upstream HSL logic | Color requests and messages (`request_background_color`, `BackgroundColorMsg`, …) |
 | `commands.go` | `src/commands.rs` | Built-in commands (`quit`, `batch`, `sequence`, `tick`, `every`, `request_window_size`); no-op commands are removed while singleton command behavior remains deterministic |
 | `commands_test.go` | `tests/commands_test.rs` | Command suite tests |
-| `cursed_renderer.go` | `src/cursed_renderer.rs` | CursedRenderer: declarative view frames, ANSI diffing, unmanaged lines |
+| `cursed_renderer.go` | `src/cursed_renderer.rs` | CursedRenderer: declarative view frames, ANSI diffing, unmanaged lines, and direct protocol output ahead of buffered frames |
 | `cursed_renderer_test.go` | `tests/tea_test.rs` | Renderer tests |
 | `cursor.go` | `src/cursor.rs` | Cursor position/shape, `request_cursor_position` |
 | `environ.go` | `src/environ.rs` | `EnvMsg` environment variables |
@@ -38,7 +38,7 @@ upstream tag `v2.0.8`, checked out locally in `upstream-go/` (gitignored).
 | `paste.go` | `src/paste.rs` | Bracketed paste messages |
 | `profile.go` | `src/profile.rs` | `ColorProfileMsg` |
 | `raw.go` | `src/raw.rs` | `raw` command sending ANSI sequences |
-| `renderer.go` | `src/renderer.rs` | `Renderer` trait |
+| `renderer.go` | `src/renderer.rs` | `Renderer` trait, including the direct protocol-output hook used before buffered frame flushes |
 | `screen.go` | `src/screen.rs` | `WindowSizeMsg`, `clear_screen`, `ModeReportMsg` |
 | `screen_test.go` | `tests/commands_test.rs` | Screen tests |
 | `signals_unix.go` | `src/signals_unix.rs` | SIGWINCH resize listener |
@@ -206,6 +206,6 @@ in the Support Files section.
 - Port-wide fixes required for parity: kitty-bitset `KeyMod` constants, SGR emission order
   (colors before attrs, 39/49/59 default-color resets, attr reset codes 22/23/24/25/27/8/29),
   pen reset before pending spaces in `renderLine`, go-exact `Duration::String()`, the color
-  profile applied to the renderer (env-detect + ColorProfileMsg), OSC queries buffered and
-  flushed with the first render (ticker-only), final model render on graceful quit, and the
+  profile applied to the renderer (env-detect + ColorProfileMsg), protocol and OSC queries
+  emitted ahead of buffered renderer startup output, final model render on graceful quit, and the
   start-up message burst (WindowSizeMsg + EnvMsg + ColorProfileMsg) matching upstream.

@@ -208,6 +208,42 @@ fn test_program_recovers_from_init_panic() {
     );
 }
 
+#[test]
+fn test_protocol_query_precedes_buffered_renderer_startup_output() {
+    let output = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+    struct RecordingWriter(std::sync::Arc<std::sync::Mutex<Vec<u8>>>);
+    impl std::io::Write for RecordingWriter {
+        fn write(&mut self, data: &[u8]) -> std::io::Result<usize> {
+            let mut output = self
+                .0
+                .lock()
+                .map_err(|_| std::io::Error::other("recording writer lock poisoned"))?;
+            output.extend_from_slice(data);
+            Ok(data.len())
+        }
+
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+
+    let result = Program::new(TestModel { counter: 0 })
+        .with_options(
+            ProgramOptions::default()
+                .with_input(None)
+                .with_output(Box::new(RecordingWriter(output.clone())))
+                .with_environment(vec![("TERM".to_string(), "xterm-256color".to_string())]),
+        )
+        .run();
+    assert!(result.is_ok());
+
+    let bytes = output.lock().expect("recorded output lock").clone();
+    assert!(
+        bytes.starts_with(b"\x1b[?2026$p\x1b[?2027$p"),
+        "protocol query must precede buffered renderer startup output: {bytes:?}"
+    );
+}
+
 #[derive(Default)]
 struct MultiMsgModel {
     messages_received: usize,

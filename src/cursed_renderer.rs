@@ -981,6 +981,13 @@ impl Renderer for CursedRenderer {
         Ok(n)
     }
 
+    fn write_direct(&mut self, s: &str) -> Result<usize, Box<dyn std::error::Error>> {
+        let bytes = s.as_bytes();
+        self.w.write_all(bytes)?;
+        self.w.flush()?;
+        Ok(bytes.len())
+    }
+
     fn on_mouse(&mut self, m: MouseMsg) -> Cmd {
         if let Some(lv) = &self.last_view {
             if let Some(on_mouse) = &lv.on_mouse {

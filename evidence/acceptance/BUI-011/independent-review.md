@@ -15,6 +15,8 @@ exact-head CI remain the independent merge gate.
 - `tests/tea_test.rs`: focused lifecycle, startup, cancellation, panic, FPS,
   command-shape and protocol-output-order regressions.
 - `docs/src/lib.rs`: public lifecycle and headless-configuration guidance.
+- `.github/workflows/ci.yml`: protected coverage reporting and trusted
+  default-branch badge publication.
 
 ## Review checks
 
@@ -27,12 +29,21 @@ exact-head CI remain the independent merge gate.
 | Documentation uses the current `<user-docs>` contract | Pass | `src/program.rs`, `src/options.rs`, `src/commands.rs`, `docs/src/lib.rs` |
 | Focused Rust validation | Pass | `cargo check -p rusty-bubbletea --lib`; `cargo test -p rusty-bubbletea --test tea_test --no-fail-fast`; 14 tests passed |
 | Reported protected parity failures | Pass locally | 14 reported examples matched Go traces after the protocol-output fix; the timing-sensitive `send-msg` trace matched across six repeated runs |
+| Coverage workflow keeps pull-request candidate jobs read-only | Pass locally | Coverage report upload is push-only; badge commit/push is isolated to a trusted `dev` push job using `HEAD:dev` |
 
 ## Findings and limits
 
 The first protected CI attempt exposed a protocol ordering defect in
 `verify_examples`: synchronized-output and terminal-color queries were written into the renderer frame buffer after startup control
 sequences. The renderer now has a direct protocol-output path, and the focused regression plus targeted PTY parity checks pass.
+The second protected CI attempt (run 32947899448) then exposed a workflow
+publication defect: coverage reached 74.04%, but the PR merge checkout had no
+local `dev` ref and the badge step failed with `src refspec dev does not
+match any`. Coverage now keeps `contents: read` for candidate pull-request
+execution, uploads the report only on a trusted `dev` push, and performs badge
+publication in a push-only job with `HEAD:dev` and `[skip ci]` to avoid
+recursive validation. The corrected workflow awaits a new protected exact-head
+run.
 The worktree cannot run the untouched full dependency graph because the
 `rusty-bubbles` dev dependency resolves its `../rusty-bubbletea` path to the
 primary checkout, causing Cargo's package-collision error when the isolated

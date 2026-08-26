@@ -1,13 +1,17 @@
 //! Cleanroom Rust port of upstream Go source file: `options.go`
 //! Upstream Target Tag / Version: `v2.0.8`
 //!
-//! <public-docs>
+//! <user-docs>
 //! # Program Options
 //!
 //! Program options (`with_fps`, `without_renderer`, `with_filter`, `with_window_size`,
 //! `with_context`, `with_output`, `with_input`, `with_environment`,
 //! `without_signal_handler`, `without_catch_panics`, `without_signals`, `with_color_profile`).
-//! </public-docs>
+//! </user-docs>
+//!
+//! Maintainer note: options are consumed once by [`crate::program::Program::run`].
+//! The input sentinel keeps the default stdin behavior distinct from an explicit
+//! `with_input(None)`, which disables input for deterministic headless programs.
 
 use std::io::{Read, Write};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -63,8 +67,11 @@ pub struct ProgramOptions<M: Model> {
     pub height: usize,
     /// Optional event filter.
     pub filter: Option<EventFilter<M>>,
-    /// Input reader override; None means stdin.
+    /// Input reader override. The default uses stdin; [`Self::with_input`] with
+    /// `None` disables input entirely.
     pub input: Option<Box<dyn Read + Send + Sync>>,
+    /// Distinguishes the default stdin input from an explicit disabled input.
+    input_disabled: bool,
     /// Output writer override; None means stdout.
     pub output: Option<Box<dyn Write + Send + Sync>>,
     /// Environment variables used by the program.
@@ -87,6 +94,7 @@ impl<M: Model> Default for ProgramOptions<M> {
             height: 0,
             filter: None,
             input: None,
+            input_disabled: false,
             output: None,
             environ: None,
             color_profile: None,
@@ -114,8 +122,14 @@ impl<M: Model> ProgramOptions<M> {
     /// <upstream-comment>WithInput sets the input which, by default, is stdin. In most cases you
     /// won't need to use this. To disable input entirely pass None.</upstream-comment>
     pub fn with_input(mut self, input: Option<Box<dyn Read + Send + Sync>>) -> Self {
+        self.input_disabled = input.is_none();
         self.input = input;
         self
+    }
+
+    /// Returns whether input was explicitly disabled with [`Self::with_input`].
+    pub(crate) fn input_disabled(&self) -> bool {
+        self.input_disabled
     }
 
     /// <upstream-comment>WithEnvironment sets the environment variables that the program will use.
@@ -171,7 +185,7 @@ impl<M: Model> ProgramOptions<M> {
     /// less than 1, the default value of 60 will be used. If over 120, the FPS
     /// will be capped at 120.</upstream-comment>
     pub fn with_fps(mut self, fps: u32) -> Self {
-        self.fps = fps;
+        self.fps = if fps == 0 { 60 } else { fps.min(120) };
         self
     }
 

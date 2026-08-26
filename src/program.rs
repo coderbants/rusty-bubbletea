@@ -12,16 +12,29 @@
 //!
 //! Example programs can be found at https://github.com/charmbracelet/bubbletea/tree/master/examples
 //! </upstream-docs>
+//!
+//! <user-docs>
+//! [`Program`] runs a model's event loop. Use [`Program::handle`] when the
+//! program must be run on another thread and controlled from the outside.
+//! [`ProgramOptions`](crate::options::ProgramOptions) supplies deterministic
+//! input, output, terminal-size, renderer, and cancellation behavior.
+//! </user-docs>
+//!
+//! Maintainer note: setup, event dispatch, effect execution, and renderer
+//! shutdown are deliberately kept as separate phases. Shared lifecycle state
+//! makes pre-start commands, external cancellation, and final shutdown
+//! observable without borrowing the model across threads.
 
 use std::fmt;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::io::{IsTerminal, Read, Write};
+use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::mpsc::{channel, Receiver, Sender};
 
 /// Message channel used to feed the program's event loop.
 type MsgChannel = Sender<Box<dyn Msg>>;
 /// Message channel used to receive messages into the program's event loop.
 type MsgReceiver = Receiver<Box<dyn Msg>>;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread;
 use std::time::Duration;
 
@@ -36,9 +49,11 @@ use crate::key::{KeyMod, KeyPressMsg, KeyReleaseMsg};
 use crate::keyboard::KeyboardEnhancementsMsg;
 use crate::model::{Model, Msg};
 use crate::mouse::{MouseClickMsg, MouseMotionMsg, MouseReleaseMsg, MouseWheelMsg};
+use crate::nil_renderer::NilRenderer;
 use crate::options::ProgramOptions;
 use crate::paste::PasteMsg;
 use crate::profile::ColorProfileMsg;
+use crate::raw::RawMsg;
 use crate::renderer::{PrintLineMsg, Renderer};
 use crate::screen::{ClearScreenMsg, WindowSizeMsg};
 use crate::tty::{disable_raw_mode, enable_raw_mode};
@@ -77,37 +92,93 @@ impl fmt::Display for ProgramError {
 
 impl std::error::Error for ProgramError {}
 
+const PROGRAM_NEW: u8 = 0;
+const PROGRAM_RUNNING: u8 = 1;
+const PROGRAM_FINISHED: u8 = 2;
+
+/// A cloneable control surface for a running [`Program`].
+///
+/// A handle may be created before the program is moved to its runner thread.
+/// Messages sent before startup remain ordered in the program's event queue;
+/// messages sent after shutdown are ignored. `kill` requests an error
+/// shutdown, while `quit` requests the normal graceful shutdown.
+#[derive(Clone)]
+pub struct ProgramHandle {
+    msg_tx: MsgChannel,
+    state: Arc<AtomicU8>,
+    killed: Arc<AtomicBool>,
+}
+
+impl ProgramHandle {
+    /// Sends a typed message to the program event loop.
+    ///
+    /// The message is ignored after the program has finished or after a kill
+    /// request. This method never blocks on the model or renderer.
+    pub fn send(&self, msg: Box<dyn Msg>) {
+        if self.killed.load(Ordering::SeqCst)
+            || self.state.load(Ordering::SeqCst) == PROGRAM_FINISHED
+        {
+            return;
+        }
+        let _ = self.msg_tx.send(msg);
+    }
+
+    /// Requests a graceful program shutdown.
+    pub fn quit(&self) {
+        self.send(Box::new(QuitMsg));
+    }
+
+    /// Requests an immediate program shutdown with [`ProgramError::Killed`].
+    pub fn kill(&self) {
+        if self.state.load(Ordering::SeqCst) == PROGRAM_FINISHED {
+            return;
+        }
+        self.killed.store(true, Ordering::SeqCst);
+        let _ = self.msg_tx.send(Box::new(QuitMsg));
+    }
+
+    /// Waits until renderer and terminal cleanup has completed.
+    ///
+    /// Call this after starting the program. A handle intentionally does not
+    /// guess whether a program that has not been started will be started later.
+    pub fn wait(&self) {
+        while self.state.load(Ordering::SeqCst) != PROGRAM_FINISHED {
+            thread::sleep(Duration::from_millis(10));
+        }
+    }
+}
+
 /// Program is the runner for a Bubble Tea v2.0.8 application.
 pub struct Program<M: Model> {
-    /// Buffered startup query sequences, flushed with the first render
-    /// (mirrors upstream `p.outputBuf` + `p.execute`).
-    startup_buf: Arc<Mutex<Option<Vec<u8>>>>,
     model: M,
     options: ProgramOptions<M>,
-    renderer: Arc<Mutex<Box<dyn Renderer>>>,
-    msg_tx: Option<MsgChannel>,
-    finished: Arc<AtomicBool>,
+    renderer: Option<Arc<Mutex<Box<dyn Renderer>>>>,
+    msg_tx: MsgChannel,
+    msg_rx: Option<MsgReceiver>,
+    state: Arc<AtomicU8>,
+    killed: Arc<AtomicBool>,
+    stopping: Arc<AtomicBool>,
+    render_thread: Option<thread::JoinHandle<()>>,
 }
 
 impl<M: Model> Program<M> {
-    /// Creates a new Program for the given model with default options.
+    /// Creates a new program for the given model with default options.
+    ///
+    /// The returned program owns its event queue immediately, so a
+    /// [`ProgramHandle`] can enqueue startup messages before [`Self::run`]
+    /// takes ownership of the runner.
     pub fn new(model: M) -> Self {
-        let (w, h) = term_size().unwrap_or((80, 24));
-        let env: Vec<String> = std::env::vars().map(|(k, v)| format!("{k}={v}")).collect();
+        let (msg_tx, msg_rx) = channel();
         Self {
-            startup_buf: Arc::new(Mutex::new(None)),
             model,
             options: ProgramOptions::default(),
-            renderer: Arc::new(Mutex::new(Box::new(
-                crate::cursed_renderer::new_cursed_renderer(
-                    Box::new(std::io::stdout()),
-                    &env,
-                    w as usize,
-                    h as usize,
-                ),
-            ))),
-            msg_tx: None,
-            finished: Arc::new(AtomicBool::new(false)),
+            renderer: None,
+            msg_tx,
+            msg_rx: Some(msg_rx),
+            state: Arc::new(AtomicU8::new(PROGRAM_NEW)),
+            killed: Arc::new(AtomicBool::new(false)),
+            stopping: Arc::new(AtomicBool::new(false)),
+            render_thread: None,
         }
     }
 
@@ -117,39 +188,50 @@ impl<M: Model> Program<M> {
         self
     }
 
+    /// Returns a cloneable control surface for this program.
+    ///
+    /// ```
+    /// # use rusty_bubbletea::{Cmd, Model, Msg, Program, View};
+    /// # struct Example;
+    /// # impl Model for Example {
+    /// #     fn update(&mut self, _msg: &dyn Msg) -> Cmd { None }
+    /// #     fn view(&self) -> View { View::new("") }
+    /// # }
+    /// let program = Program::new(Example);
+    /// let handle = program.handle();
+    /// handle.quit();
+    /// ```
+    pub fn handle(&self) -> ProgramHandle {
+        ProgramHandle {
+            msg_tx: self.msg_tx.clone(),
+            state: self.state.clone(),
+            killed: self.killed.clone(),
+        }
+    }
+
     /// <upstream-comment>Send sends a message to the main update function, effectively allowing
     /// messages to be injected from outside the program for interoperability
     /// purposes.</upstream-comment>
     pub fn send(&self, msg: Box<dyn Msg>) {
-        if let Some(tx) = &self.msg_tx {
-            let _ = tx.send(msg);
-        }
+        self.handle().send(msg);
     }
 
     /// <upstream-comment>Quit is a convenience function for quitting Bubble Tea programs. Use it
     /// when you need to shut down a Bubble Tea program from the outside.</upstream-comment>
     pub fn quit(&self) {
-        self.send(Box::new(QuitMsg));
+        self.handle().quit();
     }
 
     /// <upstream-comment>Kill stops the program immediately and restores the former terminal state.
     /// The final render that you would normally see when quitting will be skipped.
     /// [Program.Run] returns a [ErrProgramKilled] error.</upstream-comment>
-    pub fn kill(&mut self) {
-        // Disable raw mode and mark the program finished; the run loop observes
-        // the finished flag and exits.
-        let _ = disable_raw_mode();
-        self.finished.store(true, Ordering::SeqCst);
-        if let Some(tx) = &self.msg_tx {
-            let _ = tx.send(Box::new(QuitMsg));
-        }
+    pub fn kill(&self) {
+        self.handle().kill();
     }
 
     /// <upstream-comment>Wait waits/blocks until the underlying Program finished shutting down.</upstream-comment>
     pub fn wait(&self) {
-        while !self.finished.load(Ordering::SeqCst) {
-            thread::sleep(Duration::from_millis(10));
-        }
+        self.handle().wait();
     }
 
     /// <upstream-comment>Println prints above the Program. This output is unmanaged by the program
@@ -166,6 +248,22 @@ impl<M: Model> Program<M> {
         self.send(Box::new(PrintLineMsg {
             message_body: body.to_string(),
         }));
+    }
+
+    fn renderer_guard(&self) -> Option<MutexGuard<'_, Box<dyn Renderer>>> {
+        self.renderer.as_ref()?.lock().ok()
+    }
+
+    fn render_view(&self, view: crate::view::View) {
+        if let Some(mut renderer) = self.renderer_guard() {
+            renderer.render(view);
+        }
+    }
+
+    fn write_renderer(&self, text: &str) {
+        if let Some(mut renderer) = self.renderer_guard() {
+            let _ = renderer.write_string(text);
+        }
     }
 
     /// Helper to process a message, execute terminal commands, and dispatch generated commands.
@@ -195,164 +293,135 @@ impl<M: Model> Program<M> {
         }
 
         if processed_msg.as_ref().as_any().is::<ClearScreenMsg>() {
-            self.renderer.lock().unwrap().clear_screen();
+            if let Some(mut renderer) = self.renderer_guard() {
+                renderer.clear_screen();
+            }
         } else if processed_msg
             .as_ref()
             .as_any()
             .is::<crate::color::RequestBackgroundColorMsg>()
         {
-            // Mirror upstream `p.execute(ansi.RequestBackgroundColor)`: the
-            // query is buffered and flushed with the first render.
-            if let Ok(mut buf) = self.startup_buf.lock() {
-                if let Some(b) = buf.as_mut() {
-                    b.extend_from_slice(
-                        rusty_x_ansi::background::REQUEST_BACKGROUND_COLOR.as_bytes(),
-                    );
-                }
-            }
+            self.write_renderer(rusty_x_ansi::background::REQUEST_BACKGROUND_COLOR);
         } else if processed_msg
             .as_ref()
             .as_any()
             .is::<crate::color::RequestForegroundColorMsg>()
         {
-            if let Ok(mut buf) = self.startup_buf.lock() {
-                if let Some(b) = buf.as_mut() {
-                    b.extend_from_slice(
-                        rusty_x_ansi::background::REQUEST_FOREGROUND_COLOR.as_bytes(),
-                    );
-                }
-            }
+            self.write_renderer(rusty_x_ansi::background::REQUEST_FOREGROUND_COLOR);
         } else if processed_msg
             .as_ref()
             .as_any()
             .is::<crate::color::RequestCursorColorMsg>()
         {
-            if let Ok(mut buf) = self.startup_buf.lock() {
-                if let Some(b) = buf.as_mut() {
-                    b.extend_from_slice(rusty_x_ansi::background::REQUEST_CURSOR_COLOR.as_bytes());
-                }
-            }
+            self.write_renderer(rusty_x_ansi::background::REQUEST_CURSOR_COLOR);
         } else if let Some(cap) = processed_msg
             .as_ref()
             .as_any()
             .downcast_ref::<crate::termcap::RequestCapabilityMsg>()
         {
             // Mirror upstream `p.execute(ansi.RequestTermcap(cap))`: write the
-            // XTGETTCAP query (DCS + q <Pt> ST) to the terminal so the terminal
-            // responds with a CapabilityMsg.
-            use std::io::Write as _;
+            // XTGETTCAP query (DCS + q <Pt> ST) to the configured output.
             let mut seq = String::from("\x1bP+q");
-            for b in cap.0.as_bytes() {
-                seq.push_str(&format!("{:02X}", b));
+            for byte in cap.0.as_bytes() {
+                seq.push_str(&format!("{byte:02X}"));
             }
             seq.push_str("\x1b\\");
-            let _ = std::io::stdout().write_all(seq.as_bytes());
+            self.write_renderer(&seq);
             return Ok(false);
         } else if processed_msg
             .as_ref()
             .as_any()
             .is::<crate::xterm::RequestTerminalVersionMsg>()
         {
-            // Mirror upstream `p.execute(ansi.RequestNameVersion)`: query the
-            // terminal name and version (XTVERSION) so the terminal responds
-            // with a TerminalVersionMsg.
-            use std::io::Write as _;
-            let _ = std::io::stdout().write_all(b"\x1b[>q");
+            // Mirror upstream `p.execute(ansi.RequestNameVersion)` using the
+            // configured renderer output rather than process-global stdout.
+            self.write_renderer("\x1b[>q");
             return Ok(false);
         } else if processed_msg.as_ref().as_any().is::<RequestWindowSizeMsg>() {
-            if let Ok((w, h)) = term_size() {
-                let _ = tx.send(Box::new(WindowSizeMsg {
-                    width: w as usize,
-                    height: h as usize,
-                }));
-            }
-            // RequestWindowSizeMsg itself is internal — don't pass to model.update
+            let (width, height) = configured_window_size(&self.options);
+            let _ = tx.send(Box::new(WindowSizeMsg { width, height }));
+            // RequestWindowSizeMsg itself is internal — don't pass to model.update.
             return Ok(false);
         } else if let Some(ws) = processed_msg
             .as_ref()
             .as_any()
             .downcast_ref::<WindowSizeMsg>()
         {
-            // Resize the renderer first, then fall through to model.update below
-            self.renderer.lock().unwrap().resize(ws.width, ws.height);
+            // Resize the renderer first, then fall through to model.update below.
+            if let Some(mut renderer) = self.renderer_guard() {
+                renderer.resize(ws.width, ws.height);
+            }
         } else if let Some(exec_msg) = processed_msg.as_ref().as_any().downcast_ref::<ExecMsg>() {
             let _ = disable_raw_mode();
-            let mut cmd = std::process::Command::new(&exec_msg.cmd);
-            cmd.args(&exec_msg.args);
-            let _ = cmd.status();
+            let mut command = std::process::Command::new(&exec_msg.cmd);
+            command.args(&exec_msg.args);
+            let _ = command.status();
             let _ = enable_raw_mode();
         } else if let Some(print_msg) = processed_msg
             .as_ref()
             .as_any()
             .downcast_ref::<PrintLineMsg>()
         {
-            // Insert the line above the TUI without routing through model.update
-            let _ = self
-                .renderer
-                .lock()
-                .unwrap()
-                .insert_above(print_msg.message_body.clone());
-            // Re-render to flush queued lines
-            let view = self.model.view();
-            self.renderer.lock().unwrap().render(view);
+            // Insert the line above the TUI without routing through model.update.
+            if let Some(mut renderer) = self.renderer_guard() {
+                let _ = renderer.insert_above(print_msg.message_body.clone());
+                renderer.render(self.model.view());
+            }
             return Ok(false);
-        } else if let Some(env) = processed_msg.as_ref().as_any().downcast_ref::<EnvMsg>() {
-            let _ = env;
+        } else if processed_msg.as_ref().as_any().is::<RawMsg>() {
+            if let Some(raw) = processed_msg.as_ref().as_any().downcast_ref::<RawMsg>() {
+                self.write_renderer(&raw.0);
+            }
+            return Ok(false);
+        } else if let Some(_env) = processed_msg.as_ref().as_any().downcast_ref::<EnvMsg>() {
+            // EnvMsg remains visible to the model below, matching ordinary
+            // Bubble Tea startup messages.
         } else if let Some(profile) = processed_msg
             .as_ref()
             .as_any()
             .downcast_ref::<ColorProfileMsg>()
         {
-            let p = match profile.profile {
-                crate::profile::ColorProfile::TrueColor => rusty_colorprofile::Profile::TrueColor,
-                crate::profile::ColorProfile::ANSI256 => rusty_colorprofile::Profile::Ansi256,
-                crate::profile::ColorProfile::ANSI => rusty_colorprofile::Profile::Ansi,
-                crate::profile::ColorProfile::Ascii => rusty_colorprofile::Profile::Ascii,
-            };
-            self.renderer.lock().unwrap().set_color_profile(p);
-        } else if let Some(_resume) = processed_msg.as_ref().as_any().downcast_ref::<ResumeMsg>() {
+            if let Some(mut renderer) = self.renderer_guard() {
+                renderer.set_color_profile(color_profile(profile.profile));
+            }
+        } else if processed_msg.as_ref().as_any().is::<ResumeMsg>() {
             let _ = enable_raw_mode();
         }
 
-        // Dispatch the commands carried by BatchMsg and SequenceMsg,
-        // mirroring the upstream handling of `tea.Batch` and `tea.Sequence`
-        // messages (`case BatchMsg: go p.execBatchMsg(msg); continue` and
-        // `case sequenceMsg: go p.execSequenceMsg(msg); continue`): the
-        // command trees are expanded on their own thread, recursively, so a
-        // QuitMsg produced by a sequence is only delivered after every
-        // preceding command (including nested batches and sequences) has
-        // completed.
+        // Dispatch BatchMsg and SequenceMsg recursively. Batch commands run
+        // concurrently, while sequence commands preserve source order.
         if processed_msg.as_ref().as_any().is::<BatchMsg>() {
             let any = processed_msg.into_any();
-            let batch = *any.downcast::<BatchMsg>().unwrap();
-            let tx_clone = tx.clone();
-            thread::spawn(move || exec_batch_msg(batch, &tx_clone));
+            if let Ok(batch) = any.downcast::<BatchMsg>() {
+                let tx_clone = tx.clone();
+                thread::spawn(move || exec_batch_msg(*batch, &tx_clone));
+            }
             return Ok(false);
         }
 
-        // Mirror upstream `case MouseMsg:` in the event loop: route mouse
-        // messages to the renderer's on_mouse hook (used by composable view
-        // layers) and send any produced message back through the program.
-        // The message still falls through to the model's update below.
+        // Route mouse messages through the renderer's optional interceptor;
+        // the original event still falls through to model.update.
         let mouse_msg = {
             let any = processed_msg.as_ref().as_any();
-            if let Some(m) = any.downcast_ref::<crate::mouse::MouseClickMsg>() {
-                Some(crate::mouse::MouseMsg::Click(m.clone()))
-            } else if let Some(m) = any.downcast_ref::<crate::mouse::MouseMotionMsg>() {
-                Some(crate::mouse::MouseMsg::Motion(m.clone()))
-            } else if let Some(m) = any.downcast_ref::<crate::mouse::MouseReleaseMsg>() {
-                Some(crate::mouse::MouseMsg::Release(m.clone()))
+            if let Some(mouse) = any.downcast_ref::<MouseClickMsg>() {
+                Some(crate::mouse::MouseMsg::Click(mouse.clone()))
+            } else if let Some(mouse) = any.downcast_ref::<MouseMotionMsg>() {
+                Some(crate::mouse::MouseMsg::Motion(mouse.clone()))
+            } else if let Some(mouse) = any.downcast_ref::<MouseReleaseMsg>() {
+                Some(crate::mouse::MouseMsg::Release(mouse.clone()))
             } else {
-                any.downcast_ref::<crate::mouse::MouseWheelMsg>()
-                    .map(|m| crate::mouse::MouseMsg::Wheel(m.clone()))
+                any.downcast_ref::<MouseWheelMsg>()
+                    .map(|mouse| crate::mouse::MouseMsg::Wheel(mouse.clone()))
             }
         };
         if let Some(mouse_msg) = mouse_msg {
-            let cmd = self.renderer.lock().unwrap().on_mouse(mouse_msg);
-            if let Some(c) = cmd {
+            let command = self
+                .renderer_guard()
+                .and_then(|mut renderer| renderer.on_mouse(mouse_msg));
+            if let Some(command) = command {
                 let tx_clone = tx.clone();
                 thread::spawn(move || {
-                    if let Some(new_msg) = c() {
+                    if let Some(new_msg) = command() {
                         let _ = tx_clone.send(new_msg);
                     }
                 });
@@ -361,20 +430,20 @@ impl<M: Model> Program<M> {
 
         if processed_msg.as_ref().as_any().is::<SequenceMsg>() {
             let any = processed_msg.into_any();
-            let seq = *any.downcast::<SequenceMsg>().unwrap();
-            let tx_clone = tx.clone();
-            thread::spawn(move || exec_sequence_msg(seq, &tx_clone));
+            if let Ok(sequence) = any.downcast::<SequenceMsg>() {
+                let tx_clone = tx.clone();
+                thread::spawn(move || exec_sequence_msg(*sequence, &tx_clone));
+            }
             return Ok(false);
         }
 
-        let cmd = self.model.update(&*processed_msg);
-        let view = self.model.view();
-        self.renderer.lock().unwrap().render(view);
+        let command = self.model.update(&*processed_msg);
+        self.render_view(self.model.view());
 
-        if let Some(c) = cmd {
+        if let Some(command) = command {
             let tx_clone = tx.clone();
             thread::spawn(move || {
-                if let Some(new_msg) = c() {
+                if let Some(new_msg) = command() {
                     let _ = tx_clone.send(new_msg);
                 }
             });
@@ -389,80 +458,128 @@ impl<M: Model> Program<M> {
         });
     }
 
-    /// Runs the Bubble Tea v2.0.8 event loop until quit.
-    pub fn run(mut self) -> Result<M, Box<dyn std::error::Error>> {
-        let _ = enable_raw_mode();
-        self.renderer.lock().unwrap().start();
+    fn stop_render_thread(&mut self) {
+        self.stopping.store(true, Ordering::SeqCst);
+        if let Some(render_thread) = self.render_thread.take() {
+            let _ = render_thread.join();
+        }
+    }
 
-        // Termios-based cursor movement optimizations, mirroring the
-        // upstream `initInput` -> `checkOptimizedMovements` flow.
-        // Detect the color profile from the environment and set it on the
-        // renderer (upstream `colorprofile.Detect` at startup); the
-        // ColorProfileMsg path may later upgrade it.
-        {
-            use std::os::fd::AsRawFd as _;
-            let env = rusty_ultraviolet::Environ(
-                std::env::vars().map(|(k, v)| format!("{k}={v}")).collect(),
-            );
-            let profile = rusty_ultraviolet::terminal_screen::detect_color_profile(
-                Some(std::io::stdout().as_raw_fd()),
-                &env,
-            );
-            self.renderer
-                .lock()
-                .unwrap()
-                .set_color_profile(match profile {
-                    rusty_ultraviolet::terminal_screen::ColorProfile::TrueColor => {
-                        rusty_colorprofile::Profile::TrueColor
-                    }
-                    rusty_ultraviolet::terminal_screen::ColorProfile::Ansi256 => {
-                        rusty_colorprofile::Profile::Ansi256
-                    }
-                    rusty_ultraviolet::terminal_screen::ColorProfile::Ansi => {
-                        rusty_colorprofile::Profile::Ansi
-                    }
-                    _ => rusty_colorprofile::Profile::NoTty,
-                });
+    fn cleanup_renderer(&mut self, graceful: bool) {
+        self.stop_render_thread();
+        if let Some(renderer) = self.renderer.take() {
+            if let Ok(mut renderer) = renderer.lock() {
+                if graceful {
+                    renderer.render(self.model.view());
+                    let _ = renderer.flush(true);
+                }
+                let _ = renderer.close();
+            }
+        }
+        let _ = disable_raw_mode();
+    }
+
+    fn run_inner(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        let rx = self.msg_rx.take().ok_or_else(|| {
+            std::io::Error::new(
+                std::io::ErrorKind::AlreadyExists,
+                "program event loop has already been consumed",
+            )
+        })?;
+        let tx = self.msg_tx.clone();
+
+        let env_pairs = self
+            .options
+            .environ
+            .take()
+            .unwrap_or_else(|| std::env::vars().collect());
+        let env_strings: Vec<String> = env_pairs
+            .iter()
+            .map(|(key, value)| format!("{key}={value}"))
+            .collect();
+        let term = env_value(&env_strings, "TERM")
+            .filter(|value| !value.is_empty())
+            .unwrap_or("xterm-256color")
+            .to_owned();
+        let (width, height) = configured_window_size(&self.options);
+        let output_is_stdout = self.options.output.is_none();
+        let output: Box<dyn Write + Send + Sync> = match self.options.output.take() {
+            Some(output) => output,
+            None => Box::new(std::io::stdout()),
+        };
+        let renderer: Box<dyn Renderer> = if self.options.disable_renderer {
+            Box::new(NilRenderer)
+        } else {
+            Box::new(crate::cursed_renderer::new_cursed_renderer(
+                output,
+                &env_strings,
+                width,
+                height,
+            ))
+        };
+        self.renderer = Some(Arc::new(Mutex::new(renderer)));
+
+        let profile = match self.options.color_profile {
+            Some(profile) => color_profile(profile),
+            None => detect_color_profile(&env_strings, output_is_stdout),
+        };
+        let (hard_tabs, backspace) = if self.options.disable_renderer {
+            (false, false)
+        } else {
+            check_optimized_movements()
+        };
+        let renderer_ready = {
+            if let Some(mut renderer) = self.renderer_guard() {
+                renderer.start();
+                renderer.set_color_profile(profile);
+                renderer.set_optimizations(hard_tabs, backspace, false);
+                true
+            } else {
+                false
+            }
+        };
+        if !renderer_ready {
+            self.cleanup_renderer(false);
+            return Err(Box::new(std::io::Error::other(
+                "program renderer lock is unavailable",
+            )));
         }
 
-        let (hard_tabs, backspace) = check_optimized_movements();
-        // mapNl is false when the input is a real TTY (upstream:
-        // `runtime.GOOS != "windows" && p.ttyInput == nil`).
-        let map_nl = false;
-        self.renderer
-            .lock()
-            .unwrap()
-            .set_optimizations(hard_tabs, backspace, map_nl);
+        let input_disabled = self.options.input_disabled();
+        let use_raw_mode = !self.options.disable_renderer
+            && !input_disabled
+            && (self.options.input.is_some() || std::io::stdin().is_terminal());
+        if use_raw_mode {
+            let _ = enable_raw_mode();
+        }
 
-        let (tx, rx): (MsgChannel, MsgReceiver) = channel();
-        self.msg_tx = Some(tx.clone());
-
-        let external_ctx = self.options.context.clone();
-
-        // Input thread: reads raw bytes from stdin and decodes them through
-        // the ultraviolet event decoder, mirroring the upstream
-        // `uv.NewTerminalReader` input path.
-        let input_tx = tx.clone();
-        thread::spawn(move || {
-            let reader: Box<dyn std::io::Read + Send> = Box::new(std::io::stdin());
-            let mut tr =
-                rusty_ultraviolet::terminal_reader::new_terminal_reader(reader, "xterm-256color");
-            tr.set_legacy(rusty_ultraviolet::LegacyKeyEncoding::default());
-            let (dec_tx, dec_rx) = std::sync::mpsc::channel::<rusty_ultraviolet::DecodedEvent>();
-            let streamer = std::thread::spawn(move || {
-                let _ = tr.stream_events(&dec_tx);
-            });
-            for ev in dec_rx {
-                if let Some(msg) = decoded_to_msg(ev) {
-                    if input_tx.send(msg).is_err() {
-                        break;
+        if !input_disabled {
+            let reader = self.options.input.take();
+            let input_tx = tx.clone();
+            thread::spawn(move || {
+                let reader: Box<dyn Read + Send> = match reader {
+                    Some(reader) => reader,
+                    None => Box::new(std::io::stdin()),
+                };
+                let mut terminal_reader =
+                    rusty_ultraviolet::terminal_reader::new_terminal_reader(reader, &term);
+                terminal_reader.set_legacy(rusty_ultraviolet::LegacyKeyEncoding::default());
+                let (decoded_tx, decoded_rx) =
+                    std::sync::mpsc::channel::<rusty_ultraviolet::DecodedEvent>();
+                let streamer = thread::spawn(move || {
+                    let _ = terminal_reader.stream_events(&decoded_tx);
+                });
+                for event in decoded_rx {
+                    if let Some(msg) = decoded_to_msg(event) {
+                        if input_tx.send(msg).is_err() {
+                            break;
+                        }
                     }
                 }
-            }
-            let _ = streamer.join();
-        });
+                let _ = streamer.join();
+            });
+        }
 
-        // Run initial command
         if let Some(cmd) = self.model.init() {
             let tx_clone = tx.clone();
             thread::spawn(move || {
@@ -472,118 +589,166 @@ impl<M: Model> Program<M> {
             });
         }
 
-        // Send initial window size query
-        if let Ok((w, h)) = term_size() {
-            let _ = tx.send(Box::new(WindowSizeMsg {
-                width: w as usize,
-                height: h as usize,
-            }));
-        }
-
-        // Send the environment variables used by the program.
-        let _ = tx.send(Box::new(EnvMsg::from_std()));
-
-        // Send the detected color profile to the program, mirroring the
-        // upstream `go p.Send(ColorProfileMsg{*p.profile})` at startup.
-        {
-            use std::os::fd::AsRawFd as _;
-            let env = rusty_ultraviolet::Environ(
-                std::env::vars().map(|(k, v)| format!("{k}={v}")).collect(),
-            );
-            let profile = rusty_ultraviolet::terminal_screen::detect_color_profile(
-                Some(std::io::stdout().as_raw_fd()),
-                &env,
-            );
-            let msg_profile = match profile {
-                rusty_ultraviolet::terminal_screen::ColorProfile::TrueColor => {
-                    crate::profile::ColorProfile::TrueColor
-                }
-                rusty_ultraviolet::terminal_screen::ColorProfile::Ansi256 => {
-                    crate::profile::ColorProfile::ANSI256
-                }
-                rusty_ultraviolet::terminal_screen::ColorProfile::Ansi => {
-                    crate::profile::ColorProfile::ANSI
-                }
-                _ => crate::profile::ColorProfile::Ascii,
-            };
-            let _ = tx.send(Box::new(crate::profile::ColorProfileMsg {
-                profile: msg_profile,
-            }));
-        }
-
-        // Query for synchronized updates support (mode 2026) and unicode core
-        // (mode 2027), mirroring the upstream `p.execute(...)` at startup:
-        // the queries are buffered and flushed together with the first
-        // render (ticker flush or the quit path's flush(true)).
-        let query_sync = should_query_synchronized_output();
-        self.startup_buf = Arc::new(Mutex::new(if query_sync {
-            Some(b"\x1b[?2026$p\x1b[?2027$p".to_vec())
-        } else {
-            None
+        let _ = tx.send(Box::new(WindowSizeMsg { width, height }));
+        let _ = tx.send(Box::new(EnvMsg::new(env_pairs)));
+        let msg_profile = match profile {
+            rusty_colorprofile::Profile::TrueColor => crate::profile::ColorProfile::TrueColor,
+            rusty_colorprofile::Profile::Ansi256 => crate::profile::ColorProfile::ANSI256,
+            rusty_colorprofile::Profile::Ansi => crate::profile::ColorProfile::ANSI,
+            rusty_colorprofile::Profile::Ascii
+            | rusty_colorprofile::Profile::NoTty
+            | rusty_colorprofile::Profile::Unknown => crate::profile::ColorProfile::Ascii,
+        };
+        let _ = tx.send(Box::new(ColorProfileMsg {
+            profile: msg_profile,
         }));
-        let startup_buf = self.startup_buf.clone();
 
-        // Render initial view frame. The frame is flushed by the render
-        // ticker (or the quit path's flush(true)), mirroring the upstream
-        // ticker-driven render loop.
-        let initial_view = self.model.view();
-        self.renderer.lock().unwrap().render(initial_view);
+        if !self.options.disable_renderer && should_query_synchronized_output(&env_strings) {
+            self.write_renderer("\x1b[?2026$p\x1b[?2027$p");
+        }
 
-        // Render ticker: flushes the pending view at the default framerate
-        // (60fps), like the upstream `startRenderer` goroutine.
-        let tick_renderer = self.renderer.clone();
-        let done = self.finished.clone();
-        let tick_buf = startup_buf.clone();
-        thread::spawn(move || {
-            let interval = Duration::from_millis(1000 / 60);
-            while !done.load(Ordering::SeqCst) {
-                thread::sleep(interval);
-                if let Some(buf) = tick_buf.lock().unwrap().take() {
-                    use std::io::Write as _;
-                    let _ = std::io::stdout().write_all(&buf);
+        self.render_view(self.model.view());
+
+        let ticker_renderer = self.renderer.as_ref().cloned();
+        let stopping = self.stopping.clone();
+        let fps = self.options.fps.clamp(1, 120);
+        self.render_thread = ticker_renderer.map(|renderer| {
+            thread::spawn(move || {
+                let interval = Duration::from_millis(1000 / fps as u64);
+                while !stopping.load(Ordering::SeqCst) {
+                    thread::sleep(interval);
+                    if stopping.load(Ordering::SeqCst) {
+                        break;
+                    }
+                    if let Ok(mut renderer) = renderer.lock() {
+                        let _ = renderer.flush(false);
+                    }
                 }
-                let _ = tick_renderer.lock().unwrap().flush(false);
-            }
+            })
         });
 
-        // Main event processing loop
+        let external_ctx = self.options.context.clone();
         let result = loop {
-            // Check for external context cancellation.
+            if self.killed.load(Ordering::SeqCst) {
+                break Err(ProgramError::Killed);
+            }
             if let Some(ctx) = &external_ctx {
                 if ctx.done() {
                     break Err(ProgramError::Killed);
                 }
             }
-            match rx.recv_timeout(Duration::from_millis(50)) {
+            match rx.recv_timeout(Duration::from_millis(10)) {
                 Ok(msg) => match self.handle_msg(msg, &tx) {
                     Ok(true) => break Ok(()),
                     Ok(false) => continue,
-                    Err(e) => break Err(e),
+                    Err(error) => break Err(error),
                 },
                 Err(std::sync::mpsc::RecvTimeoutError::Timeout) => continue,
                 Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => break Ok(()),
             }
         };
 
-        self.finished.store(true, Ordering::SeqCst);
-        // Graceful shutdown: ensure we render the final state of the model
-        // (upstream `p.render(model)` after the event loop).
-        let final_view = self.model.view();
-        self.renderer.lock().unwrap().render(final_view);
-        // Flush the last frame with closing=true before closing, like the
-        // upstream `stopRenderer` path. Note: any startup queries still
-        // buffered are NOT written here — upstream flushes its output buffer
-        // only from the render ticker goroutine, so queries buffered but
-        // never flushed by the ticker are dropped (observed behavior).
-        let _fr = self.renderer.lock().unwrap().flush(true);
-        let _cr = self.renderer.lock().unwrap().close();
-        let _ = disable_raw_mode();
+        let graceful = result.is_ok();
+        self.cleanup_renderer(graceful);
+        result.map_err(|error| Box::new(error) as Box<dyn std::error::Error>)
+    }
+
+    /// Runs the Bubble Tea v2.0.8 event loop until quit.
+    pub fn run(mut self) -> Result<M, Box<dyn std::error::Error>> {
+        if self
+            .state
+            .compare_exchange(
+                PROGRAM_NEW,
+                PROGRAM_RUNNING,
+                Ordering::SeqCst,
+                Ordering::SeqCst,
+            )
+            .is_err()
+        {
+            return Err(Box::new(std::io::Error::new(
+                std::io::ErrorKind::AlreadyExists,
+                "program can only be run once",
+            )));
+        }
+
+        let result = if self.options.disable_catch_panics {
+            self.run_inner()
+        } else {
+            match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| self.run_inner())) {
+                Ok(result) => result,
+                Err(_) => {
+                    self.cleanup_renderer(false);
+                    Err(Box::new(ProgramError::Panic) as Box<dyn std::error::Error>)
+                }
+            }
+        };
+        self.state.store(PROGRAM_FINISHED, Ordering::SeqCst);
 
         match result {
             Ok(()) => Ok(self.model),
-            Err(e) => Err(Box::new(e)),
+            Err(error) => Err(error),
         }
     }
+}
+
+/// Returns the configured initial terminal dimensions, with a stable fallback
+/// for headless or non-terminal execution.
+fn configured_window_size<M: Model>(options: &ProgramOptions<M>) -> (usize, usize) {
+    let detected = match term_size() {
+        Ok((width, height)) => (width as usize, height as usize),
+        Err(_) => (80, 24),
+    };
+    let width = if options.width == 0 {
+        detected.0
+    } else {
+        options.width
+    };
+    let height = if options.height == 0 {
+        detected.1
+    } else {
+        options.height
+    };
+    (width.max(1), height.max(1))
+}
+
+/// Looks up one `KEY=VALUE` entry from the configured environment snapshot.
+fn env_value<'a>(env: &'a [String], key: &str) -> Option<&'a str> {
+    env.iter().find_map(|entry| {
+        let (entry_key, value) = entry.split_once('=')?;
+        (entry_key == key).then_some(value)
+    })
+}
+
+/// Maps the public Bubble Tea color profile to the renderer's profile type.
+fn color_profile(profile: crate::profile::ColorProfile) -> rusty_colorprofile::Profile {
+    match profile {
+        crate::profile::ColorProfile::TrueColor => rusty_colorprofile::Profile::TrueColor,
+        crate::profile::ColorProfile::ANSI256 => rusty_colorprofile::Profile::Ansi256,
+        crate::profile::ColorProfile::ANSI => rusty_colorprofile::Profile::Ansi,
+        crate::profile::ColorProfile::Ascii => rusty_colorprofile::Profile::Ascii,
+    }
+}
+
+/// Detects the renderer color profile using the configured environment and,
+/// when stdout is the configured output, the process stdout terminal handle.
+fn detect_color_profile(env: &[String], output_is_stdout: bool) -> rusty_colorprofile::Profile {
+    let output_fd = if output_is_stdout {
+        #[cfg(unix)]
+        {
+            use std::os::fd::AsRawFd;
+            Some(std::io::stdout().as_raw_fd())
+        }
+        #[cfg(not(unix))]
+        {
+            None
+        }
+    } else {
+        None
+    };
+    rusty_ultraviolet::terminal_screen::detect_color_profile(
+        output_fd,
+        &rusty_ultraviolet::Environ(env.to_vec()),
+    )
 }
 
 /// Execute the commands carried by a [BatchMsg], mirroring the upstream
@@ -646,18 +811,18 @@ fn dispatch_msg(msg: Box<dyn Msg>, tx: &MsgChannel) {
 /// ShouldQuerySynchronizedOutput returns whether the terminal is known to
 /// support synchronized output (mode 2026), mirroring the upstream gate in
 /// `tea.go`.
-fn should_query_synchronized_output() -> bool {
-    let term_type = std::env::var("TERM").unwrap_or_default();
-    let term_prog = std::env::var("TERM_PROGRAM").ok();
-    let ssh_tty = std::env::var("SSH_TTY").is_ok();
-    let wt_session = std::env::var("WT_SESSION").is_ok();
+fn should_query_synchronized_output(env: &[String]) -> bool {
+    let term_type = env_value(env, "TERM").unwrap_or_default();
+    let term_prog = env_value(env, "TERM_PROGRAM");
+    let ssh_tty = env_value(env, "SSH_TTY").is_some();
+    let wt_session = env_value(env, "WT_SESSION").is_some();
 
     let ok_term_prog = term_prog.is_some();
     wt_session
         || term_type.contains("ghostty")
         || term_type.contains("wezterm")
         || (!ok_term_prog && !ssh_tty)
-        || (!ssh_tty && !term_prog.as_deref().unwrap_or("").contains("Apple"))
+        || (!ssh_tty && !term_prog.unwrap_or("").contains("Apple"))
         || term_type.contains("alacritty")
         || term_type.contains("kitty")
         || term_type.contains("rio")

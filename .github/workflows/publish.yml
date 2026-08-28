@@ -13,7 +13,9 @@ jobs:
     name: Publish Crate
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
       - uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772
         with:
           toolchain: 1.98.0
@@ -39,7 +41,7 @@ jobs:
           } >> "$GITHUB_ENV"
       - name: Test shared Cargo cache env
         run: scripts/test-cargo-env.sh
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5
         with:
           go-version: 'stable'
       - name: Fetch upstream Go source (pinned)
@@ -47,41 +49,47 @@ jobs:
           git clone --quiet https://github.com/charmbracelet/bubbletea.git upstream-go
           cd upstream-go && git checkout --quiet v2.0.8
       - name: Fetch sibling rusty-bubbles (pinned)
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           repository: coderbants/rusty-bubbles
           path: siblings/rusty-bubbles
-          ref: dev
+          ref: 2a88f46cb8179388adb1951adb0f4fdbdcd633c0
+          persist-credentials: false
       - name: Fetch sibling rusty-colorprofile (pinned)
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           repository: coderbants/rusty-colorprofile
           path: siblings/rusty-colorprofile
-          ref: dev
+          ref: 2d505e7821f72f133c17d6cc7afd314e03eddb66
+          persist-credentials: false
       - name: Fetch sibling rusty-lipgloss (pinned)
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           repository: coderbants/rusty-lipgloss
           path: siblings/rusty-lipgloss
-          ref: dev
+          ref: 685b25da2af226b6ab2b9ce70f149eb9e4fb54ee
+          persist-credentials: false
       - name: Fetch sibling rusty-testkit (pinned)
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           repository: coderbants/rusty-testkit
           path: siblings/rusty-testkit
-          ref: dev
+          ref: 163cf16399662da7bf2b17fb6637b466c6402fb2
+          persist-credentials: false
       - name: Fetch sibling rusty-ultraviolet (pinned)
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           repository: coderbants/rusty-ultraviolet
           path: siblings/rusty-ultraviolet
-          ref: dev
+          ref: ad29f896f95e1bcd850d69580152edfac3289eec
+          persist-credentials: false
       - name: Fetch sibling rusty-x-ansi (pinned)
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           repository: coderbants/rusty-x-ansi
           path: siblings/rusty-x-ansi
-          ref: dev
+          ref: 971128e8566ad37991cd9cc50ff4f4c8a4b09c29
+          persist-credentials: false
       - name: Place sibling crates
         run: |
           mkdir -p ../siblings && true

@@ -4,6 +4,7 @@ set -u
 
 cd "$(dirname "$0")/.."
 fail=0
+toolchain_action_sha="6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772"
 
 toolchain="$(grep -m1 '^channel = ' rust-toolchain.toml | sed 's/.*"\(.*\)".*/\1/')"
 cargo_version="$(grep -m1 '^rust-version = ' Cargo.toml | sed 's/.*"\(.*\)".*/\1/')"
@@ -20,13 +21,14 @@ fi
 
 for workflow in .github/workflows/ci.yml .github/workflows/publish.yml; do
   action_count="$(grep -cF 'uses: dtolnay/rust-toolchain@' "${workflow}")"
+  pinned_action_count="$(grep -cF "uses: dtolnay/rust-toolchain@${toolchain_action_sha}" "${workflow}")"
   selector_count="$(grep -cF 'toolchain:' "${workflow}")"
   matching_count="$(grep -cF "toolchain: ${toolchain}" "${workflow}")"
   if [ "${action_count}" -eq 0 ]; then
     echo "ERROR: ${workflow} does not install a Rust toolchain" >&2
     fail=1
-  elif [ "${action_count}" -ne "${selector_count}" ] || [ "${action_count}" -ne "${matching_count}" ]; then
-    echo "ERROR: every Rust toolchain action in ${workflow} must select Rust ${toolchain}" >&2
+  elif [ "${action_count}" -ne "${pinned_action_count}" ] || [ "${action_count}" -ne "${selector_count}" ] || [ "${action_count}" -ne "${matching_count}" ]; then
+    echo "ERROR: every Rust toolchain action in ${workflow} must use the approved immutable pin and select Rust ${toolchain}" >&2
     fail=1
   fi
 done

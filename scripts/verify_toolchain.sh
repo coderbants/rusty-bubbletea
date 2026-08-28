@@ -52,7 +52,6 @@ fi
 
 publish_checkout_count="$(grep -cF 'uses: actions/checkout@' .github/workflows/publish.yml)"
 publish_pinned_checkout_count="$(grep -cF "uses: actions/checkout@${checkout_sha}" .github/workflows/publish.yml)"
-publish_credential_count="$(grep -cF 'persist-credentials: false' .github/workflows/publish.yml)"
 publish_setup_go_count="$(grep -cF 'uses: actions/setup-go@' .github/workflows/publish.yml)"
 publish_pinned_setup_go_count="$(grep -cF "uses: actions/setup-go@${setup_go_sha}" .github/workflows/publish.yml)"
 sibling_count="$(grep -cF 'repository: coderbants/' .github/workflows/publish.yml)"
@@ -61,8 +60,8 @@ upstream_checkout_count="$(grep -cF "git checkout --quiet ${upstream_commit}" .g
 registry_token_count="$(grep -cF '          CARGO_REGISTRY_TOKEN:' .github/workflows/publish.yml)"
 github_token_count="$(grep -cF '          GH_TOKEN:' .github/workflows/publish.yml)"
 
-if [ "${publish_checkout_count}" -eq 0 ] || [ "${publish_checkout_count}" -ne "${publish_pinned_checkout_count}" ] || [ "${publish_checkout_count}" -ne "${publish_credential_count}" ]; then
-  echo "ERROR: every publish checkout must use the approved immutable pin without persisted credentials" >&2
+if [ "${publish_checkout_count}" -eq 0 ] || [ "${publish_checkout_count}" -ne "${publish_pinned_checkout_count}" ]; then
+  echo "ERROR: every publish checkout must use the approved immutable pin" >&2
   fail=1
 fi
 

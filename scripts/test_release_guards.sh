@@ -56,7 +56,7 @@ else
 fi
 
 cp .github/workflows/publish.yml "${fixture_root}/.github/workflows/publish.yml"
-perl -0pi -e 's/persist-credentials: false/persist-credentials: true/' "${fixture_root}/.github/workflows/publish.yml"
+perl -0pi -e 's/(uses: actions\/checkout\@11bd71901bbe5b1630ceea73d27597364c9af683\n        with:\n          )persist-credentials: false/${1}persist-credentials: true/' "${fixture_root}/.github/workflows/publish.yml"
 perl -0pi -e 's/(toolchain: 1\.98\.0\n)/$1          persist-credentials: false\n/' "${fixture_root}/.github/workflows/publish.yml"
 if RELEASE_ROOT="${fixture_root}" "${fixture_root}/scripts/verify_toolchain.sh" >/dev/null 2>&1; then
   echo "ERROR: credentials compensated in another step were accepted" >&2

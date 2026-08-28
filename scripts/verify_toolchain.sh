@@ -19,8 +19,14 @@ if [ "${cargo_version}" != "${toolchain}" ]; then
 fi
 
 for workflow in .github/workflows/ci.yml .github/workflows/publish.yml; do
-  if ! grep -qF "toolchain: ${toolchain}" "${workflow}"; then
-    echo "ERROR: ${workflow} does not select Rust ${toolchain}" >&2
+  action_count="$(grep -cF 'uses: dtolnay/rust-toolchain@' "${workflow}")"
+  selector_count="$(grep -cF 'toolchain:' "${workflow}")"
+  matching_count="$(grep -cF "toolchain: ${toolchain}" "${workflow}")"
+  if [ "${action_count}" -eq 0 ]; then
+    echo "ERROR: ${workflow} does not install a Rust toolchain" >&2
+    fail=1
+  elif [ "${action_count}" -ne "${selector_count}" ] || [ "${action_count}" -ne "${matching_count}" ]; then
+    echo "ERROR: every Rust toolchain action in ${workflow} must select Rust ${toolchain}" >&2
     fail=1
   fi
 done

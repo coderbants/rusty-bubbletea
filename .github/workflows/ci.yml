@@ -126,6 +126,8 @@ jobs:
 
       - name: verify_mapping
         run: ./scripts/verify_mapping.sh
+      - name: verify_toolchain
+        run: ./scripts/verify_toolchain.sh
   coverage:
     name: Coverage
     runs-on: ubuntu-latest

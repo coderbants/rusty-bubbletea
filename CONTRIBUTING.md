@@ -26,7 +26,7 @@ cargo test --all-targets
 - `examples/` — executable Rust ports of upstream Go examples.
 - `tests/` — Rust integration tests ported from upstream `*_test.go` suites.
 - `upstream-go/` — the pinned upstream Go checkout (git-ignored, never commit it).
-- `scripts/` — parity and mapping verification helpers.
+- `scripts/` — parity, mapping, and toolchain consistency verification helpers.
 - `UPSTREAM_MAPPING.md` — the authoritative 1:1 account of every upstream file.
 
 ## The cleanroom porting workflow

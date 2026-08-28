@@ -2,9 +2,16 @@
 # Verifies that the checked-in Rust toolchain is consistent across local and CI entrypoints.
 set -u
 
-cd "$(dirname "$0")/.."
+if [ -n "${RELEASE_ROOT:-}" ]; then
+  cd "${RELEASE_ROOT}"
+else
+  cd "$(dirname "$0")/.."
+fi
 fail=0
 toolchain_action_sha="6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772"
+checkout_sha="11bd71901bbe5b1630ceea73d27597364c9af683"
+setup_go_sha="d35c59abb061a4a6fb18e82ac0862c26744d6ab5"
+upstream_commit="fc707bb7ea0161405bb6c653ec93f6a9c6a72fe1"
 
 toolchain="$(grep -m1 '^channel = ' rust-toolchain.toml | sed 's/.*"\(.*\)".*/\1/')"
 cargo_version="$(grep -m1 '^rust-version = ' Cargo.toml | sed 's/.*"\(.*\)".*/\1/')"
@@ -43,8 +50,6 @@ if ! grep -qF 'components: clippy, rustfmt' .github/workflows/publish.yml; then
   fail=1
 fi
 
-checkout_sha="11bd71901bbe5b1630ceea73d27597364c9af683"
-setup_go_sha="d35c59abb061a4a6fb18e82ac0862c26744d6ab5"
 publish_checkout_count="$(grep -cF 'uses: actions/checkout@' .github/workflows/publish.yml)"
 publish_pinned_checkout_count="$(grep -cF "uses: actions/checkout@${checkout_sha}" .github/workflows/publish.yml)"
 publish_credential_count="$(grep -cF 'persist-credentials: false' .github/workflows/publish.yml)"
@@ -52,6 +57,9 @@ publish_setup_go_count="$(grep -cF 'uses: actions/setup-go@' .github/workflows/p
 publish_pinned_setup_go_count="$(grep -cF "uses: actions/setup-go@${setup_go_sha}" .github/workflows/publish.yml)"
 sibling_count="$(grep -cF 'repository: coderbants/' .github/workflows/publish.yml)"
 sibling_ref_count="$(grep -Ec '^[[:space:]]+ref: [0-9a-f]{40}$' .github/workflows/publish.yml)"
+upstream_checkout_count="$(grep -cF "git checkout --quiet ${upstream_commit}" .github/workflows/publish.yml)"
+registry_token_count="$(grep -cF '          CARGO_REGISTRY_TOKEN:' .github/workflows/publish.yml)"
+github_token_count="$(grep -cF '          GH_TOKEN:' .github/workflows/publish.yml)"
 
 if [ "${publish_checkout_count}" -eq 0 ] || [ "${publish_checkout_count}" -ne "${publish_pinned_checkout_count}" ] || [ "${publish_checkout_count}" -ne "${publish_credential_count}" ]; then
   echo "ERROR: every publish checkout must use the approved immutable pin without persisted credentials" >&2
@@ -65,6 +73,16 @@ fi
 
 if [ "${sibling_count}" -eq 0 ] || [ "${sibling_count}" -ne "${sibling_ref_count}" ] || grep -qF 'ref: dev' .github/workflows/publish.yml; then
   echo "ERROR: every publish sibling checkout must use an immutable commit ref" >&2
+  fail=1
+fi
+
+if [ "${upstream_checkout_count}" -ne 1 ]; then
+  echo "ERROR: publish must execute the verified upstream commit ${upstream_commit}" >&2
+  fail=1
+fi
+
+if [ "${registry_token_count}" -ne 1 ] || [ "${github_token_count}" -ne 2 ]; then
+  echo "ERROR: release credentials must remain scoped to their individual publication steps" >&2
   fail=1
 fi
 

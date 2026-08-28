@@ -48,8 +48,9 @@ jobs:
           go-version: 'stable'
       - name: Fetch upstream Go source (pinned)
         run: |
-          git clone --quiet https://github.com/charmbracelet/bubbletea.git upstream-go
-          cd upstream-go && git checkout --quiet v2.0.8
+          git clone --quiet --no-tags https://github.com/charmbracelet/bubbletea.git upstream-go
+          cd upstream-go
+          git checkout --quiet fc707bb7ea0161405bb6c653ec93f6a9c6a72fe1
       - name: Fetch sibling rusty-bubbles (pinned)
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:

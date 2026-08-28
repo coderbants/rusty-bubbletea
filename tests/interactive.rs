@@ -7,6 +7,8 @@
 //! interactive behavior (typing, navigating, mouse clicks) that a byte-level
 //! key-sweep cannot.
 
+#![cfg(unix)]
+
 use rusty_testkit::PtySession;
 
 /// The package's Cargo target directory. `cargo metadata` is authoritative:

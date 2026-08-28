@@ -20,9 +20,11 @@ crossterm = "0.27"
 futures = "0.3"
 
 [dev-dependencies]
-rusty-testkit = { version = "0.1.1", path = "../rusty-testkit" }
 tokio-test = "0.4"
 rusty-bubbles = { version = "2.1.0", path = "../rusty-bubbles" }
+
+[target.'cfg(unix)'.dev-dependencies]
+rusty-testkit = { version = "0.1.1", path = "../rusty-testkit" }
 
 [lib]
 name = "rusty_bubbletea"

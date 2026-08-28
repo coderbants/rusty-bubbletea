@@ -55,7 +55,8 @@ if [ "$#" -ge 1 ]; then
       fi
       ;;
     *)
-      echo "WARN: '${tag}' is not a v* tag; skipping the tag check (crate version was still verified)." >&2
+      echo "ERROR: release tag '${tag}' is not a v* tag." >&2
+      fail=1
       ;;
   esac
 fi

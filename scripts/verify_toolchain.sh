@@ -66,6 +66,45 @@ if [ "${publish_checkout_count}" -eq 0 ] || [ "${publish_checkout_count}" -ne "$
   fail=1
 fi
 
+if ! awk -v expected_sha="${checkout_sha}" '
+  function finish_step() {
+    if (!checkout_step) {
+      return
+    }
+    if (!pinned_checkout || !safe_credentials || (sibling_checkout && !immutable_ref)) {
+      invalid=1
+    }
+    checkout_step=0
+  }
+  /^[[:space:]]+-[[:space:]]/ {
+    finish_step()
+  }
+  /uses: actions\/checkout@/ {
+    checkout_step=1
+    pinned_checkout=index($0, "actions/checkout@" expected_sha) > 0
+    safe_credentials=0
+    sibling_checkout=0
+    immutable_ref=0
+    next
+  }
+  checkout_step && /persist-credentials: false/ {
+    safe_credentials=1
+  }
+  checkout_step && /repository: coderbants\// {
+    sibling_checkout=1
+  }
+  checkout_step && /^[[:space:]]+ref: [0-9a-f]{40}$/ {
+    immutable_ref=1
+  }
+  END {
+    finish_step()
+    exit invalid
+  }
+' .github/workflows/publish.yml; then
+  echo "ERROR: publish checkout pins, refs, and credentials are not safe within each checkout step" >&2
+  fail=1
+fi
+
 if [ "${publish_setup_go_count}" -eq 0 ] || [ "${publish_setup_go_count}" -ne "${publish_pinned_setup_go_count}" ]; then
   echo "ERROR: every publish setup-go action must use the approved immutable pin" >&2
   fail=1

@@ -56,6 +56,16 @@ else
 fi
 
 cp .github/workflows/publish.yml "${fixture_root}/.github/workflows/publish.yml"
+perl -0pi -e 's/persist-credentials: false/persist-credentials: true/' "${fixture_root}/.github/workflows/publish.yml"
+perl -0pi -e 's/(toolchain: 1\.98\.0\n)/$1          persist-credentials: false\n/' "${fixture_root}/.github/workflows/publish.yml"
+if RELEASE_ROOT="${fixture_root}" "${fixture_root}/scripts/verify_toolchain.sh" >/dev/null 2>&1; then
+  echo "ERROR: credentials compensated in another step were accepted" >&2
+  fail=1
+else
+  echo "OK: cross-step credential compensation is rejected"
+fi
+
+cp .github/workflows/publish.yml "${fixture_root}/.github/workflows/publish.yml"
 perl -0pi -e 's/fc707bb7ea0161405bb6c653ec93f6a9c6a72fe1/v2.0.8/' "${fixture_root}/.github/workflows/publish.yml"
 if RELEASE_ROOT="${fixture_root}" "${fixture_root}/scripts/verify_toolchain.sh" >/dev/null 2>&1; then
   echo "ERROR: mutable upstream ref was accepted" >&2

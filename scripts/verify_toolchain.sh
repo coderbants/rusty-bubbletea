@@ -43,6 +43,36 @@ if ! grep -qF 'components: clippy, rustfmt' .github/workflows/publish.yml; then
   fail=1
 fi
 
+checkout_sha="11bd71901bbe5b1630ceea73d27597364c9af683"
+setup_go_sha="d35c59abb061a4a6fb18e82ac0862c26744d6ab5"
+publish_checkout_count="$(grep -cF 'uses: actions/checkout@' .github/workflows/publish.yml)"
+publish_pinned_checkout_count="$(grep -cF "uses: actions/checkout@${checkout_sha}" .github/workflows/publish.yml)"
+publish_credential_count="$(grep -cF 'persist-credentials: false' .github/workflows/publish.yml)"
+publish_setup_go_count="$(grep -cF 'uses: actions/setup-go@' .github/workflows/publish.yml)"
+publish_pinned_setup_go_count="$(grep -cF "uses: actions/setup-go@${setup_go_sha}" .github/workflows/publish.yml)"
+sibling_count="$(grep -cF 'repository: coderbants/' .github/workflows/publish.yml)"
+sibling_ref_count="$(grep -Ec '^[[:space:]]+ref: [0-9a-f]{40}$' .github/workflows/publish.yml)"
+
+if [ "${publish_checkout_count}" -eq 0 ] || [ "${publish_checkout_count}" -ne "${publish_pinned_checkout_count}" ] || [ "${publish_checkout_count}" -ne "${publish_credential_count}" ]; then
+  echo "ERROR: every publish checkout must use the approved immutable pin without persisted credentials" >&2
+  fail=1
+fi
+
+if [ "${publish_setup_go_count}" -eq 0 ] || [ "${publish_setup_go_count}" -ne "${publish_pinned_setup_go_count}" ]; then
+  echo "ERROR: every publish setup-go action must use the approved immutable pin" >&2
+  fail=1
+fi
+
+if [ "${sibling_count}" -eq 0 ] || [ "${sibling_count}" -ne "${sibling_ref_count}" ] || grep -qF 'ref: dev' .github/workflows/publish.yml; then
+  echo "ERROR: every publish sibling checkout must use an immutable commit ref" >&2
+  fail=1
+fi
+
+if grep -qF 'workflow_dispatch:' .github/workflows/publish.yml; then
+  echo "ERROR: publish must not be manually dispatchable outside a release tag" >&2
+  fail=1
+fi
+
 if ! grep -qF "Rust ${toolchain}" CONTRIBUTING.md; then
   echo "ERROR: CONTRIBUTING.md does not document Rust ${toolchain}" >&2
   fail=1

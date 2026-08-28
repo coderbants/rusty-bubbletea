@@ -22,6 +22,8 @@ jobs:
           components: clippy, rustfmt
       - name: Verify toolchain consistency
         run: ./scripts/verify_toolchain.sh
+      - name: Test release guards
+        run: ./scripts/test_release_guards.sh
       - name: Verify version and tag match upstream
         run: scripts/verify_upstream_version.sh "$GITHUB_REF_NAME"
       - name: Configure shared Cargo cache

@@ -20,7 +20,8 @@ set -u
 cd "$(dirname "$0")/.."
 
 crate_version="$(grep -m1 '^version' Cargo.toml | sed 's/.*"\(.*\)".*/\1/')"
-upstream="$(grep -m1 'Upstream Target Tag / Version:' src/lib.rs | sed -n 's/.*`\([^`]*\)`.*/\1/p' | tr -d ' ')"
+upstream_source="${UPSTREAM_VERSION_SOURCE:-src/lib.rs}"
+upstream="$(grep -m1 'Upstream Target Tag / Version:' "${upstream_source}" | sed -n 's/.*`\([^`]*\)`.*/\1/p' | tr -d ' ')"
 
 if [ -z "${upstream}" ]; then
   echo "ERROR: could not read the tracked upstream version from src/lib.rs" >&2

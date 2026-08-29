@@ -27,6 +27,21 @@ mod unix {
         SAVED_TERMIOS.get_or_init(|| Mutex::new(None))
     }
 
+    /// Restores a saved value and clears it only after restoration succeeds.
+    ///
+    /// Keeping the value on failure allows terminal cleanup to be retried
+    /// instead of permanently losing the pre-raw-mode state.
+    fn restore_saved_state<T>(
+        saved: &mut Option<T>,
+        restore: impl FnOnce(&T) -> io::Result<()>,
+    ) -> io::Result<()> {
+        if let Some(value) = saved.as_ref() {
+            restore(value)?;
+            saved.take();
+        }
+        Ok(())
+    }
+
     /// Enables POSIX raw mode while preserving the upstream output behavior.
     pub(crate) fn enable_raw_mode() -> io::Result<()> {
         use std::os::fd::AsRawFd;
@@ -68,17 +83,47 @@ mod unix {
     pub(crate) fn disable_raw_mode() -> io::Result<()> {
         use std::os::fd::AsRawFd;
 
-        let saved = saved_termios()
+        let mut saved = saved_termios()
             .lock()
-            .map_err(|_| io::Error::other("saved terminal state lock poisoned"))?
-            .take();
-        if let Some(termios) = saved {
-            let fd = io::stdin().as_raw_fd();
-            if unsafe { libc::tcsetattr(fd, libc::TCSANOW, &termios) } != 0 {
+            .map_err(|_| io::Error::other("saved terminal state lock poisoned"))?;
+        let fd = io::stdin().as_raw_fd();
+        restore_saved_state(&mut saved, |termios| {
+            if unsafe { libc::tcsetattr(fd, libc::TCSANOW, termios) } != 0 {
                 return Err(io::Error::last_os_error());
             }
+            Ok(())
+        })
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::restore_saved_state;
+        use std::io;
+
+        #[test]
+        fn failed_restore_preserves_saved_state_for_retry() {
+            let mut saved = Some(7_u8);
+
+            let result = restore_saved_state(&mut saved, |_| {
+                Err(io::Error::other("injected restore failure"))
+            });
+
+            assert!(result.is_err());
+            assert_eq!(saved, Some(7));
         }
-        Ok(())
+
+        #[test]
+        fn successful_restore_clears_saved_state() {
+            let mut saved = Some(7_u8);
+
+            restore_saved_state(&mut saved, |value| {
+                assert_eq!(*value, 7);
+                Ok(())
+            })
+            .expect("injected terminal restoration should succeed");
+
+            assert_eq!(saved, None);
+        }
     }
 }
 

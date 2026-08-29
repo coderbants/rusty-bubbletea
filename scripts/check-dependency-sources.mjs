@@ -64,7 +64,15 @@ if (!rejectedInvalidSource) {
 const metadata = JSON.parse(
   execFileSync(
     "cargo",
-    ["+1.98.0", "metadata", "--manifest-path", path.join(repositoryRoot, "Cargo.toml"), "--format-version", "1"],
+    [
+      "+1.98.0",
+      "metadata",
+      "--locked",
+      "--manifest-path",
+      path.join(repositoryRoot, "Cargo.toml"),
+      "--format-version",
+      "1",
+    ],
     { encoding: "utf8" },
   ),
 );

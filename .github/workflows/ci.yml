@@ -123,7 +123,7 @@ jobs:
           } >> "$GITHUB_ENV"
       - name: Test shared Cargo cache env
         run: scripts/test-cargo-env.sh
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
         with:
           go-version: 'stable'
       - name: Fetch upstream Go source (pinned)
@@ -286,14 +286,16 @@ jobs:
           mv siblings/rusty-ultraviolet ../rusty-ultraviolet
           mv siblings/rusty-x-ansi ../rusty-x-ansi
       - name: Install cargo-tarpaulin
-        uses: taiki-e/install-action@cargo-tarpaulin
+        uses: taiki-e/install-action@ea1c3734cd0711356678179db64b866219fd688b
+        with:
+          tool: cargo-tarpaulin
       - name: Generate code coverage
         run: |
           cargo tarpaulin --all-features --out xml --output-dir target/tarpaulin -- --test-threads=1 2>&1 | tee /tmp/tarpaulin.log
 
       - name: Upload coverage report for dev badge
         if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: coverage-report
           path: target/tarpaulin/cobertura.xml
@@ -312,7 +314,7 @@ jobs:
         with:
           ref: dev
       - name: Download coverage report
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: coverage-report
           path: target/tarpaulin

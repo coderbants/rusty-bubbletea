@@ -557,7 +557,12 @@ impl<M: Model> Program<M> {
             && !input_disabled
             && (self.options.input.is_some() || std::io::stdin().is_terminal());
         if use_raw_mode {
-            enable_raw_mode()?;
+            if let Err(enable_error) = enable_raw_mode() {
+                return match self.cleanup_renderer(false) {
+                    Ok(()) => Err(Box::new(enable_error)),
+                    Err(cleanup_error) => Err(Box::new(cleanup_error)),
+                };
+            }
         }
 
         if !input_disabled {

@@ -921,9 +921,10 @@ fn uv_mouse_to_mouse(m: rusty_ultraviolet::Mouse) -> crate::mouse::Mouse {
 /// CheckOptimizedMovements reads the stdin termios and reports whether hard
 /// tabs (TABDLY==TAB0) and backspace (BSDLY==BS0) optimizations are enabled.
 fn check_optimized_movements() -> (bool, bool) {
-    use std::os::fd::AsRawFd;
     #[cfg(unix)]
     {
+        use std::os::fd::AsRawFd;
+
         let fd = std::io::stdin().as_raw_fd();
         let mut t: libc::termios = unsafe { std::mem::zeroed() };
         if unsafe { libc::tcgetattr(fd, &mut t) } != 0 {

@@ -48,7 +48,7 @@ upstream tag `v2.0.8`, checked out locally in `upstream-go/` (gitignored).
 | `termios_other.go` | `src/termios_other.rs` | Non-POSIX fallback |
 | `termios_unix.go` | `src/termios_unix.rs` | POSIX termios helper |
 | `termios_windows.go` | `src/termios_windows.rs` | Windows console mode helper |
-| `tty.go` | `src/tty.rs` | `init_terminal` / `restore_terminal` |
+| `tty.go` | `src/tty.rs` | `init_terminal` / `restore_terminal`; Unix raw-mode implementation with compile-safe Windows no-op boundary |
 | `tty_unix.go` | `src/tty_unix.rs` | Unix TTY reader + raw mode |
 | `tty_windows.go` | `src/tty_windows.rs` | Windows VT console helper |
 | `xterm.go` | `src/xterm.rs` | XTVERSION query, `TerminalVersionMsg` |
@@ -159,6 +159,11 @@ byte-for-byte.
 | `examples/suspend/main.go` | Pending | Suspend/resume; resumes on 'r' (interactive TUI port pending) |
 | `tutorials/basics/main.go` | `examples/tutorial_basics.rs` | Tutorial: counter; quits on 'q' |
 | `tutorials/commands/main.go` | `examples/tutorial_commands.rs` | Tutorial: commands; quits on 'q' |
+
+Rust-only portability regression coverage is maintained in `tests/windows_platform.rs`; it
+exercises the Windows raw-mode and terminal-restoration boundary that has no standalone
+upstream Go test file. The PTY-driven `tests/interactive.rs` suite remains Unix-gated because
+its real pseudo-terminal dependency is intentionally not claimed as native Windows support.
 
 Example support files (`examples/go.mod`, `examples/go.sum`, `examples/table/demo.tape`,
 per-example `README.md`/`.gif` assets, `tutorials/go.mod`, `tutorials/go.sum`) are documented

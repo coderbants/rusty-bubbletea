@@ -104,6 +104,10 @@ jobs:
           mv siblings/rusty-testkit ../rusty-testkit
           mv siblings/rusty-ultraviolet ../rusty-ultraviolet
           mv siblings/rusty-x-ansi ../rusty-x-ansi
+      - name: Verify sibling dependency source identity
+        run: |
+          cargo tree --package rusty-bubbletea --invert rusty-colorprofile@0.4.3
+          cargo tree --package rusty-bubbletea --invert rusty-x-ansi@0.11.7
       - name: Format
         run: cargo fmt --all --check
       - name: Lint

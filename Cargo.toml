@@ -26,6 +26,12 @@ rusty-bubbles = { version = "2.1.0", path = "../rusty-bubbles" }
 [target.'cfg(unix)'.dev-dependencies]
 rusty-testkit = { version = "0.1.1", path = "../rusty-testkit" }
 
+[patch.crates-io]
+# Root patches are required because Cargo ignores patch sections declared by
+# dependencies such as rusty-ultraviolet. Keep every sibling edge on one source.
+rusty-colorprofile = { path = "../rusty-colorprofile" }
+rusty-x-ansi = { path = "../rusty-x-ansi" }
+
 [lib]
 name = "rusty_bubbletea"
 path = "src/lib.rs"

@@ -520,9 +520,9 @@ fn test_clipboard_and_color_commands() {
 
     // TTY helpers
     let _ = rusty_bubbletea::tty::get_window_size();
-    let (tx_sig, _rx_sig) = std::sync::mpsc::channel();
+    let (_tx_sig, _rx_sig) = std::sync::mpsc::channel::<Box<dyn Msg>>();
     #[cfg(unix)]
-    rusty_bubbletea::signals_unix::listen_for_resize(&tx_sig);
+    rusty_bubbletea::signals_unix::listen_for_resize(&_tx_sig);
 }
 
 #[test]
@@ -596,7 +596,11 @@ fn test_keyboard_and_mouse_and_env_and_logging() {
     nil.reset();
     assert!(nil.close().is_ok());
 
-    let mut logger = logging::log_to_file("/tmp/test_bubbletea.log", "test").unwrap();
+    let log_path = std::env::temp_dir()
+        .join("rusty-bubbletea-test.log")
+        .to_string_lossy()
+        .into_owned();
+    let mut logger = logging::log_to_file(&log_path, "test").unwrap();
     logger.log("test message");
 }
 

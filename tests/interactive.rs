@@ -1,3 +1,5 @@
+#![cfg(unix)]
+
 //! Interactive integration tests for the Bubble Tea examples, driven through
 //! a real pseudo-terminal (Playwright-style): keys, typing, mouse, resizing,
 //! and assertions on the reconstructed on-screen state.

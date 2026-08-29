@@ -161,6 +161,11 @@ byte-for-byte.
 | `tutorials/basics/main.go` | `examples/tutorial_basics.rs` | Tutorial: counter; quits on 'q' |
 | `tutorials/commands/main.go` | `examples/tutorial_commands.rs` | Tutorial: commands; quits on 'q' |
 
+Rust-only portability regression coverage is maintained in `tests/windows_tty.rs`; it
+exercises the Windows raw-mode and terminal-restoration boundary that has no standalone
+upstream Go test file. The PTY-driven `tests/interactive.rs` suite remains Unix-gated because
+its real pseudo-terminal dependency is intentionally not claimed as native Windows support.
+
 Example support files (`examples/go.mod`, `examples/go.sum`, `examples/table/demo.tape`,
 per-example `README.md`/`.gif` assets, `tutorials/go.mod`, `tutorials/go.sum`) are documented
 in the Support Files section.
@@ -173,7 +178,7 @@ in the Support Files section.
 | `README.md` | `README.md` | Documented Rust port header with graphics & links |
 | Repository lifecycle guide | `docs/src/lib.rs` | User-facing documentation anchor for `ProgramHandle`, headless options, cancellation, and graceful versus error shutdown |
 | `UPGRADE_GUIDE_V2.md` | `README.md` (notes) | v1 -> v2 migration guidance summarized in README |
-| `go.mod` / `go.sum` | `Cargo.toml` | Dependency manifest (Go modules -> Cargo crates); candidate declares the supported Rust 1.91 toolchain floor |
+| `go.mod` / `go.sum` | `Cargo.toml` | Dependency manifest (Go modules -> Cargo crates); candidate declares the supported Rust 1.98.0 toolchain floor |
 | `examples/go.mod` / `examples/go.sum` / `tutorials/go.mod` / `tutorials/go.sum` | `Cargo.toml` | Example-module manifests (deps like bubbles, glamour, harmonica are example-only) |
 | `examples/*/README.md` and `examples/*/*.gif` | `examples/` docs | Per-example docs/assets; retained as upstream documentation references |
 | `examples/isbn-form/isbn-form.tape` | (asset) | VHS recording asset; not applicable to the Rust crate |

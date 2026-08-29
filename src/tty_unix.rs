@@ -1,13 +1,13 @@
 //! Cleanroom Rust port of upstream Go source file: `tty_unix.go`
 //! Upstream Target Tag / Version: `v2.0.8`
 //!
-//! <public-docs>
+//! <user-docs>
 //! # TTY (Unix)
 //!
 //! POSIX Unix TTY handle and raw mode initialization. The implementation is
 //! compiled only for Unix targets so Windows never type-checks its termios or
 //! raw-file-descriptor operations.
-//! </public-docs>
+//! </user-docs>
 
 /// Unix TTY initialization check.
 pub fn is_unix_tty() -> bool {
@@ -28,7 +28,7 @@ mod unix {
     }
 
     /// Enables POSIX raw mode while preserving the upstream output behavior.
-    pub(super) fn enable_raw_mode() -> io::Result<()> {
+    pub(crate) fn enable_raw_mode() -> io::Result<()> {
         use std::os::fd::AsRawFd;
 
         let fd = io::stdin().as_raw_fd();
@@ -65,7 +65,7 @@ mod unix {
     }
 
     /// Restores the terminal state saved by [`enable_raw_mode`].
-    pub(super) fn disable_raw_mode() -> io::Result<()> {
+    pub(crate) fn disable_raw_mode() -> io::Result<()> {
         use std::os::fd::AsRawFd;
 
         let saved = saved_termios()

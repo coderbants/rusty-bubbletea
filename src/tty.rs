@@ -1,14 +1,14 @@
 //! Cleanroom Rust port of upstream Go source file: `tty.go`
 //! Upstream Target Tag / Version: `v2.0.8`
 //!
-//! <public-docs>
+//! <user-docs>
 //! # TTY Terminal Management
 //!
 //! TTY initialization, raw mode toggles, and window dimension queries for
 //! Bubble Tea v2.0.8. Unix targets use the upstream-compatible termios and
 //! raw-file-descriptor implementation. Windows targets use crossterm's safe
 //! console-mode API for enable, disable, initialize, and restore operations.
-//! </public-docs>
+//! </user-docs>
 
 use crossterm::terminal::size as term_size;
 

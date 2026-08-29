@@ -161,7 +161,7 @@ byte-for-byte.
 | `tutorials/basics/main.go` | `examples/tutorial_basics.rs` | Tutorial: counter; quits on 'q' |
 | `tutorials/commands/main.go` | `examples/tutorial_commands.rs` | Tutorial: commands; quits on 'q' |
 
-Rust-only portability regression coverage is maintained in `tests/windows_platform.rs`; it
+Rust-only portability regression coverage is maintained in `tests/windows_tty.rs`; it
 exercises the Windows raw-mode and terminal-restoration boundary that has no standalone
 upstream Go test file. The PTY-driven `tests/interactive.rs` suite remains Unix-gated because
 its real pseudo-terminal dependency is intentionally not claimed as native Windows support.

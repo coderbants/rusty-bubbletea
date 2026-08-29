@@ -48,9 +48,9 @@ upstream tag `v2.0.8`, checked out locally in `upstream-go/` (gitignored).
 | `termios_other.go` | `src/termios_other.rs` | Non-POSIX fallback |
 | `termios_unix.go` | `src/termios_unix.rs` | POSIX termios helper |
 | `termios_windows.go` | `src/termios_windows.rs` | Windows console mode helper |
-| `tty.go` | `src/tty.rs` | `init_terminal` / `restore_terminal`; Unix raw-mode implementation with compile-safe Windows no-op boundary |
-| `tty_unix.go` | `src/tty_unix.rs` | Unix TTY reader + raw mode |
-| `tty_windows.go` | `src/tty_windows.rs` | Windows VT console helper |
+| `tty.go` | `src/tty.rs` | Public terminal facade; dispatches raw mode and restore operations to the target platform while sharing window-size queries |
+| `tty_unix.go` | `src/tty_unix.rs` | Unix-only TTY state, termios, and raw-file-descriptor implementation |
+| `tty_windows.go` | `src/tty_windows.rs` | Windows-only safe crossterm console-mode implementation |
 | `xterm.go` | `src/xterm.rs` | XTVERSION query, `TerminalVersionMsg` |
 
 ## Test Files (`*_test.go` -> `tests/`)
@@ -66,6 +66,7 @@ upstream tag `v2.0.8`, checked out locally in `upstream-go/` (gitignored).
 | `mouse_test.go` | `tests/mouse_test.rs` | Mouse event suite |
 | `options_test.go` | `tests/commands_test.rs` | Program option tests |
 | `screen_test.go` | `tests/commands_test.rs` | Screen buffer tests |
+| Rust Windows regression | `tests/windows_tty.rs` | Native Windows compile and public terminal-surface regression for the platform split |
 
 Golden files under `testdata/` are accounted for by the corresponding Rust test
 assertions (values verified against upstream output): `testdata/TestClearMsg/*.golden`

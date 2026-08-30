@@ -223,7 +223,7 @@ jobs:
       - name: verify_toolchain
         run: ./scripts/verify_toolchain.sh
       - name: test_release_guards
-        run: ./scripts/test_release_guards.sh
+        run: ./scripts/release-guards.test.sh
   coverage:
     name: Coverage
     runs-on: ubuntu-latest

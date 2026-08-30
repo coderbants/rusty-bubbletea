@@ -184,7 +184,7 @@ in the Support Files section.
 | `examples/isbn-form/isbn-form.tape` | (asset) | VHS recording asset; not applicable to the Rust crate |
 | `examples/table/demo.tape` | (asset) | VHS recording asset; not applicable to the Rust crate |
 | `Taskfile.yaml` / `.goreleaser.yml` / `.golangci.yml` | `.github/workflows/publish.yml` | Build/lint/release config -> CI workflow |
-| `.github/workflows/*` | `.github/workflows/ci.yml`, `.github/workflows/publish.yml` | CI/CD -> Rust CI/publish workflows, immutable sibling revisions, fail-closed sibling source-identity verification, focused native Windows library/TTY validation, example parity, and trusted default-branch badge publication |
+| `.github/workflows/*` | `.github/workflows/ci.yml`, `.github/workflows/publish.yml`, `Cargo.lock` | CI/CD -> Rust CI/publish workflows, immutable sibling revisions, a checked-in dependency lock used by fail-closed sibling source-identity verification, focused native Windows library/TTY validation, example parity, and trusted default-branch badge publication |
 | `.github/ISSUE_TEMPLATE/*` / `.github/dependabot.yml` / `.gitattributes` / `.gitignore` / `.editorconfig` | `.gitignore` | Process/config files; not applicable to the Rust crate |
 | `testdata/*.golden` | `tests/*.rs` | Golden outputs accounted for by test assertions |
 

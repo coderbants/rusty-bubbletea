@@ -244,42 +244,6 @@ fn test_protocol_query_precedes_buffered_renderer_startup_output() {
     );
 }
 
-#[cfg(unix)]
-#[test]
-fn test_raw_mode_start_failure_closes_initialized_renderer() {
-    let output = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
-    struct RecordingWriter(std::sync::Arc<std::sync::Mutex<Vec<u8>>>);
-    impl std::io::Write for RecordingWriter {
-        fn write(&mut self, data: &[u8]) -> std::io::Result<usize> {
-            let mut output = self
-                .0
-                .lock()
-                .map_err(|_| std::io::Error::other("recording writer lock poisoned"))?;
-            output.extend_from_slice(data);
-            Ok(data.len())
-        }
-
-        fn flush(&mut self) -> std::io::Result<()> {
-            Ok(())
-        }
-    }
-
-    let result = Program::new(TestModel { counter: 0 })
-        .with_options(
-            ProgramOptions::default()
-                .with_input(Some(Box::new(std::io::Cursor::new(Vec::<u8>::new()))))
-                .with_output(Box::new(RecordingWriter(output.clone())))
-                .with_environment(vec![("TERM".to_string(), "xterm-256color".to_string())]),
-        )
-        .run();
-
-    assert!(result.is_err(), "non-terminal stdin must reject raw mode");
-    assert!(
-        !output.lock().expect("recorded output lock").is_empty(),
-        "renderer close must flush its buffered startup state after raw-mode failure"
-    );
-}
-
 #[derive(Default)]
 struct MultiMsgModel {
     messages_received: usize,

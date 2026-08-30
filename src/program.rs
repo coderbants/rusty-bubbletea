@@ -486,6 +486,22 @@ impl<M: Model> Program<M> {
         disable_raw_mode()
     }
 
+    fn enable_raw_mode_with_cleanup<F>(
+        &mut self,
+        enable: F,
+    ) -> Result<(), Box<dyn std::error::Error>>
+    where
+        F: FnOnce() -> std::io::Result<()>,
+    {
+        if let Err(enable_error) = enable() {
+            return match self.cleanup_renderer(false) {
+                Ok(()) => Err(Box::new(enable_error)),
+                Err(cleanup_error) => Err(Box::new(cleanup_error)),
+            };
+        }
+        Ok(())
+    }
+
     fn run_inner(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         let rx = self.msg_rx.take().ok_or_else(|| {
             std::io::Error::new(
@@ -557,12 +573,7 @@ impl<M: Model> Program<M> {
             && !input_disabled
             && (self.options.input.is_some() || std::io::stdin().is_terminal());
         if use_raw_mode {
-            if let Err(enable_error) = enable_raw_mode() {
-                return match self.cleanup_renderer(false) {
-                    Ok(()) => Err(Box::new(enable_error)),
-                    Err(cleanup_error) => Err(Box::new(cleanup_error)),
-                };
-            }
+            self.enable_raw_mode_with_cleanup(enable_raw_mode)?;
         }
 
         if !input_disabled {
@@ -960,6 +971,34 @@ fn check_optimized_movements() -> (bool, bool) {
 mod tests {
     use super::*;
     use rusty_ultraviolet as uv;
+
+    struct NoopModel;
+
+    impl Model for NoopModel {
+        fn update(&mut self, _msg: &dyn Msg) -> crate::model::Cmd {
+            None
+        }
+
+        fn view(&self) -> crate::view::View {
+            crate::view::View::new("")
+        }
+    }
+
+    #[test]
+    fn raw_mode_start_failure_consumes_initialized_renderer() {
+        let mut program = Program::new(NoopModel);
+        program.renderer = Some(Arc::new(Mutex::new(Box::new(NilRenderer))));
+
+        let result = program.enable_raw_mode_with_cleanup(|| {
+            Err(std::io::Error::other("injected raw-mode failure"))
+        });
+
+        assert!(result.is_err());
+        assert!(
+            program.renderer.is_none(),
+            "raw-mode startup failure must close and consume the initialized renderer"
+        );
+    }
 
     #[test]
     fn test_decoded_to_msg_events() {

@@ -1,6 +1,5 @@
 /target
 /upstream-go
-Cargo.lock
 
 # Local artifacts
 .codemap/

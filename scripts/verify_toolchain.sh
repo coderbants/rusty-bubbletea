@@ -11,6 +11,8 @@ fail=0
 toolchain_action_sha="6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772"
 checkout_sha="11bd71901bbe5b1630ceea73d27597364c9af683"
 setup_go_sha="d35c59abb061a4a6fb18e82ac0862c26744d6ab5"
+ci_checkout_sha="11d5960a326750d5838078e36cf38b85af677262"
+ci_setup_go_sha="40f1582b2485089dde7abd97c1529aa768e1baff"
 upstream_commit="fc707bb7ea0161405bb6c653ec93f6a9c6a72fe1"
 
 toolchain="$(grep -m1 '^channel = ' rust-toolchain.toml | sed 's/.*"\(.*\)".*/\1/')"
@@ -47,6 +49,45 @@ fi
 
 if ! grep -qF 'components: clippy, rustfmt' .github/workflows/publish.yml; then
   echo "ERROR: publish does not install the clippy and rustfmt components" >&2
+  fail=1
+fi
+
+ci_checkout_count="$(grep -cF 'uses: actions/checkout@' .github/workflows/ci.yml)"
+ci_pinned_checkout_count="$(grep -cF "uses: actions/checkout@${ci_checkout_sha}" .github/workflows/ci.yml)"
+ci_setup_go_count="$(grep -cF 'uses: actions/setup-go@' .github/workflows/ci.yml)"
+ci_pinned_setup_go_count="$(grep -cF "uses: actions/setup-go@${ci_setup_go_sha}" .github/workflows/ci.yml)"
+ci_sibling_count="$(grep -cF 'repository: coderbants/' .github/workflows/ci.yml)"
+ci_sibling_ref_count="$(grep -Ec '^[[:space:]]+ref: [0-9a-f]{40}$' .github/workflows/ci.yml)"
+ci_candidate_sha_count="$(grep -cF "CANDIDATE_SHA: \${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}" .github/workflows/ci.yml)"
+ci_candidate_ref_count="$(grep -cF 'ref: ${{ env.CANDIDATE_SHA }}' .github/workflows/ci.yml)"
+ci_candidate_verify_count="$(grep -cF 'run: test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"' .github/workflows/ci.yml)"
+ci_safe_credentials_count="$(grep -cF 'persist-credentials: false' .github/workflows/ci.yml)"
+ci_upstream_clone_count="$(grep -cF 'git clone --quiet --no-tags https://github.com/charmbracelet/bubbletea.git upstream-go' .github/workflows/ci.yml)"
+ci_upstream_checkout_count="$(grep -cF "git checkout --quiet ${upstream_commit}" .github/workflows/ci.yml)"
+expected_ci_safe_checkout_count=$((ci_sibling_count + ci_candidate_ref_count))
+
+if [ "${ci_checkout_count}" -eq 0 ] || [ "${ci_checkout_count}" -ne "${ci_pinned_checkout_count}" ]; then
+  echo "ERROR: every CI checkout must use the approved immutable pin" >&2
+  fail=1
+fi
+
+if [ "${ci_setup_go_count}" -eq 0 ] || [ "${ci_setup_go_count}" -ne "${ci_pinned_setup_go_count}" ]; then
+  echo "ERROR: every CI setup-go action must use the approved immutable pin" >&2
+  fail=1
+fi
+
+if [ "${ci_sibling_count}" -eq 0 ] || [ "${ci_sibling_count}" -ne "${ci_sibling_ref_count}" ]; then
+  echo "ERROR: every CI sibling checkout must use an immutable commit ref" >&2
+  fail=1
+fi
+
+if [ "${ci_candidate_sha_count}" -ne 1 ] || [ "${ci_candidate_ref_count}" -ne 4 ] || [ "${ci_candidate_verify_count}" -ne 4 ] || [ "${ci_safe_credentials_count}" -ne "${expected_ci_safe_checkout_count}" ]; then
+  echo "ERROR: every CI candidate job must check out and verify the exact pull-request head or push commit without persisted credentials" >&2
+  fail=1
+fi
+
+if [ "${ci_upstream_clone_count}" -ne 1 ] || [ "${ci_upstream_checkout_count}" -ne 1 ]; then
+  echo "ERROR: CI must execute the verified upstream commit ${upstream_commit}" >&2
   fail=1
 fi
 

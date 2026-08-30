@@ -29,6 +29,52 @@ cp Cargo.toml rust-toolchain.toml CONTRIBUTING.md UPSTREAM_MAPPING.md "${fixture
 cp .github/workflows/ci.yml .github/workflows/publish.yml "${fixture_root}/.github/workflows/"
 cp scripts/verify_toolchain.sh "${fixture_root}/scripts/"
 
+perl -0pi -e 's/actions\/checkout\@11d5960a326750d5838078e36cf38b85af677262/actions\/checkout\@v6/' "${fixture_root}/.github/workflows/ci.yml"
+if RELEASE_ROOT="${fixture_root}" "${fixture_root}/scripts/verify_toolchain.sh" >/dev/null 2>&1; then
+  echo "ERROR: mutable CI checkout action pin was accepted" >&2
+  fail=1
+else
+  echo "OK: mutable CI checkout action pin is rejected"
+fi
+
+cp .github/workflows/ci.yml "${fixture_root}/.github/workflows/ci.yml"
+perl -0pi -e 's/ref: 4e630da89d40b63c5c57722ff4c9f85a791ce59b/ref: dev/' "${fixture_root}/.github/workflows/ci.yml"
+if RELEASE_ROOT="${fixture_root}" "${fixture_root}/scripts/verify_toolchain.sh" >/dev/null 2>&1; then
+  echo "ERROR: mutable CI sibling ref was accepted" >&2
+  fail=1
+else
+  echo "OK: mutable CI sibling ref is rejected"
+fi
+
+cp .github/workflows/ci.yml "${fixture_root}/.github/workflows/ci.yml"
+perl -0pi -e 's/persist-credentials: false/persist-credentials: true/' "${fixture_root}/.github/workflows/ci.yml"
+if RELEASE_ROOT="${fixture_root}" "${fixture_root}/scripts/verify_toolchain.sh" >/dev/null 2>&1; then
+  echo "ERROR: persisted CI checkout credentials were accepted" >&2
+  fail=1
+else
+  echo "OK: persisted CI checkout credentials are rejected"
+fi
+
+cp .github/workflows/ci.yml "${fixture_root}/.github/workflows/ci.yml"
+perl -0pi -e 's/fc707bb7ea0161405bb6c653ec93f6a9c6a72fe1/v2.0.8/' "${fixture_root}/.github/workflows/ci.yml"
+if RELEASE_ROOT="${fixture_root}" "${fixture_root}/scripts/verify_toolchain.sh" >/dev/null 2>&1; then
+  echo "ERROR: mutable CI upstream ref was accepted" >&2
+  fail=1
+else
+  echo "OK: mutable CI upstream ref is rejected"
+fi
+
+cp .github/workflows/ci.yml "${fixture_root}/.github/workflows/ci.yml"
+perl -0pi -e 's/run: test "\$\(git rev-parse HEAD\)" = "\$CANDIDATE_SHA"/run: true/' "${fixture_root}/.github/workflows/ci.yml"
+if RELEASE_ROOT="${fixture_root}" "${fixture_root}/scripts/verify_toolchain.sh" >/dev/null 2>&1; then
+  echo "ERROR: missing exact-head CI assertion was accepted" >&2
+  fail=1
+else
+  echo "OK: missing exact-head CI assertion is rejected"
+fi
+
+cp .github/workflows/ci.yml "${fixture_root}/.github/workflows/ci.yml"
+
 perl -0pi -e 's/actions\/checkout\@11bd71901bbe5b1630ceea73d27597364c9af683/actions\/checkout\@v4/' "${fixture_root}/.github/workflows/publish.yml"
 if RELEASE_ROOT="${fixture_root}" "${fixture_root}/scripts/verify_toolchain.sh" >/dev/null 2>&1; then
   echo "ERROR: mutable checkout action pin was accepted" >&2

@@ -69,6 +69,10 @@ pub const ERR_PROGRAM_KILLED: &str = "program was killed";
 /// signal, or when it receives a [InterruptMsg].</upstream-comment>
 pub const ERR_INTERRUPTED: &str = "program was interrupted";
 
+/// Error text returned when the program cannot safely change or restore the
+/// terminal mode.
+pub const ERR_TERMINAL: &str = "terminal mode operation failed";
+
 /// ProgramError is the error type returned by [Program::run].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ProgramError {
@@ -78,6 +82,8 @@ pub enum ProgramError {
     Interrupted,
     /// The program recovered from a panic.
     Panic,
+    /// A terminal mode transition or restoration failed.
+    Terminal,
 }
 
 impl fmt::Display for ProgramError {
@@ -86,6 +92,7 @@ impl fmt::Display for ProgramError {
             ProgramError::Killed => write!(f, "{}", ERR_PROGRAM_KILLED),
             ProgramError::Interrupted => write!(f, "{}", ERR_INTERRUPTED),
             ProgramError::Panic => write!(f, "{}", ERR_PROGRAM_PANIC),
+            ProgramError::Terminal => write!(f, "{}", ERR_TERMINAL),
         }
     }
 }
@@ -286,9 +293,9 @@ impl<M: Model> Program<M> {
         }
 
         if processed_msg.as_ref().as_any().is::<SuspendMsg>() {
-            // Best-effort suspension: restore the terminal until a resume
-            // message arrives; the program continues afterwards.
-            let _ = disable_raw_mode();
+            // Restore the terminal before suspension. A failed restoration is
+            // fatal because continuing could leave the user's TTY in raw mode.
+            disable_raw_mode().map_err(|_| ProgramError::Terminal)?;
             self.send_resume_later(tx);
         }
 
@@ -352,11 +359,11 @@ impl<M: Model> Program<M> {
                 renderer.resize(ws.width, ws.height);
             }
         } else if let Some(exec_msg) = processed_msg.as_ref().as_any().downcast_ref::<ExecMsg>() {
-            let _ = disable_raw_mode();
+            disable_raw_mode().map_err(|_| ProgramError::Terminal)?;
             let mut command = std::process::Command::new(&exec_msg.cmd);
             command.args(&exec_msg.args);
             let _ = command.status();
-            let _ = enable_raw_mode();
+            enable_raw_mode().map_err(|_| ProgramError::Terminal)?;
         } else if let Some(print_msg) = processed_msg
             .as_ref()
             .as_any()
@@ -385,7 +392,7 @@ impl<M: Model> Program<M> {
                 renderer.set_color_profile(color_profile(profile.profile));
             }
         } else if processed_msg.as_ref().as_any().is::<ResumeMsg>() {
-            let _ = enable_raw_mode();
+            enable_raw_mode().map_err(|_| ProgramError::Terminal)?;
         }
 
         // Dispatch BatchMsg and SequenceMsg recursively. Batch commands run
@@ -465,7 +472,7 @@ impl<M: Model> Program<M> {
         }
     }
 
-    fn cleanup_renderer(&mut self, graceful: bool) {
+    fn cleanup_renderer(&mut self, graceful: bool) -> std::io::Result<()> {
         self.stop_render_thread();
         if let Some(renderer) = self.renderer.take() {
             if let Ok(mut renderer) = renderer.lock() {
@@ -476,7 +483,23 @@ impl<M: Model> Program<M> {
                 let _ = renderer.close();
             }
         }
-        let _ = disable_raw_mode();
+        disable_raw_mode()
+    }
+
+    fn enable_raw_mode_with_cleanup<F>(
+        &mut self,
+        enable: F,
+    ) -> Result<(), Box<dyn std::error::Error>>
+    where
+        F: FnOnce() -> std::io::Result<()>,
+    {
+        if let Err(enable_error) = enable() {
+            return match self.cleanup_renderer(false) {
+                Ok(()) => Err(Box::new(enable_error)),
+                Err(cleanup_error) => Err(Box::new(cleanup_error)),
+            };
+        }
+        Ok(())
     }
 
     fn run_inner(&mut self) -> Result<(), Box<dyn std::error::Error>> {
@@ -539,7 +562,7 @@ impl<M: Model> Program<M> {
             }
         };
         if !renderer_ready {
-            self.cleanup_renderer(false);
+            self.cleanup_renderer(false)?;
             return Err(Box::new(std::io::Error::other(
                 "program renderer lock is unavailable",
             )));
@@ -550,7 +573,7 @@ impl<M: Model> Program<M> {
             && !input_disabled
             && (self.options.input.is_some() || std::io::stdin().is_terminal());
         if use_raw_mode {
-            let _ = enable_raw_mode();
+            self.enable_raw_mode_with_cleanup(enable_raw_mode)?;
         }
 
         if !input_disabled {
@@ -649,7 +672,7 @@ impl<M: Model> Program<M> {
         };
 
         let graceful = result.is_ok();
-        self.cleanup_renderer(graceful);
+        self.cleanup_renderer(graceful)?;
         result.map_err(|error| Box::new(error) as Box<dyn std::error::Error>)
     }
 
@@ -676,10 +699,10 @@ impl<M: Model> Program<M> {
         } else {
             match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| self.run_inner())) {
                 Ok(result) => result,
-                Err(_) => {
-                    self.cleanup_renderer(false);
-                    Err(Box::new(ProgramError::Panic) as Box<dyn std::error::Error>)
-                }
+                Err(_) => match self.cleanup_renderer(false) {
+                    Ok(()) => Err(Box::new(ProgramError::Panic) as Box<dyn std::error::Error>),
+                    Err(error) => Err(Box::new(error) as Box<dyn std::error::Error>),
+                },
             }
         };
         self.state.store(PROGRAM_FINISHED, Ordering::SeqCst);
@@ -949,6 +972,34 @@ mod tests {
     use super::*;
     use rusty_ultraviolet as uv;
 
+    struct NoopModel;
+
+    impl Model for NoopModel {
+        fn update(&mut self, _msg: &dyn Msg) -> crate::model::Cmd {
+            None
+        }
+
+        fn view(&self) -> crate::view::View {
+            crate::view::View::new("")
+        }
+    }
+
+    #[test]
+    fn raw_mode_start_failure_consumes_initialized_renderer() {
+        let mut program = Program::new(NoopModel);
+        program.renderer = Some(Arc::new(Mutex::new(Box::new(NilRenderer))));
+
+        let result = program.enable_raw_mode_with_cleanup(|| {
+            Err(std::io::Error::other("injected raw-mode failure"))
+        });
+
+        assert!(result.is_err());
+        assert!(
+            program.renderer.is_none(),
+            "raw-mode startup failure must close and consume the initialized renderer"
+        );
+    }
+
     #[test]
     fn test_decoded_to_msg_events() {
         let k = uv::Key {
@@ -1048,5 +1099,6 @@ mod tests {
         assert_eq!(format!("{}", ProgramError::Killed), ERR_PROGRAM_KILLED);
         assert_eq!(format!("{}", ProgramError::Interrupted), ERR_INTERRUPTED);
         assert_eq!(format!("{}", ProgramError::Panic), ERR_PROGRAM_PANIC);
+        assert_eq!(format!("{}", ProgramError::Terminal), ERR_TERMINAL);
     }
 }

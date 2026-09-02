@@ -15,22 +15,108 @@ on:
 permissions:
   contents: read
 
+env:
+  CANDIDATE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
 jobs:
   version-bump:
     name: Version Change Required
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           fetch-depth: 0
+          ref: ${{ env.CANDIDATE_SHA }}
+          persist-credentials: false
+      - name: Verify exact candidate checkout
+        shell: bash
+        run: test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
       - name: Verify version matches upstream
         run: scripts/verify_upstream_version.sh
+  windows-native:
+    name: Windows native validation
+    runs-on: windows-latest
+    needs: version-bump
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+          persist-credentials: false
+      - name: Verify exact candidate checkout
+        shell: bash
+        run: test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+      - uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772
+        with:
+          toolchain: 1.98.0
+      - name: Fetch sibling rusty-bubbles
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: coderbants/rusty-bubbles
+          path: siblings/rusty-bubbles
+          ref: 4e630da89d40b63c5c57722ff4c9f85a791ce59b
+          persist-credentials: false
+      - name: Fetch sibling rusty-colorprofile
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: coderbants/rusty-colorprofile
+          path: siblings/rusty-colorprofile
+          ref: 2d505e7821f72f133c17d6cc7afd314e03eddb66
+          persist-credentials: false
+      - name: Fetch sibling rusty-lipgloss
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: coderbants/rusty-lipgloss
+          path: siblings/rusty-lipgloss
+          ref: e4ba3aaffb7468239b5e0c4d174e13d4b372afc4
+          persist-credentials: false
+      - name: Fetch sibling rusty-testkit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: coderbants/rusty-testkit
+          path: siblings/rusty-testkit
+          ref: 9b689f2abc13b856ff704d20a9cdba714e71fbd2
+          persist-credentials: false
+      - name: Fetch sibling rusty-ultraviolet
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: coderbants/rusty-ultraviolet
+          path: siblings/rusty-ultraviolet
+          ref: 09d7ac8e04e70255dd8dfd66af56dd2fa816b2e2
+          persist-credentials: false
+      - name: Fetch sibling rusty-x-ansi
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: coderbants/rusty-x-ansi
+          path: siblings/rusty-x-ansi
+          ref: 971128e8566ad37991cd9cc50ff4f4c8a4b09c29
+          persist-credentials: false
+      - name: Place sibling crates
+        shell: pwsh
+        run: |
+          Move-Item -Path "siblings/rusty-bubbles" -Destination "../rusty-bubbles"
+          Move-Item -Path "siblings/rusty-colorprofile" -Destination "../rusty-colorprofile"
+          Move-Item -Path "siblings/rusty-lipgloss" -Destination "../rusty-lipgloss"
+          Move-Item -Path "siblings/rusty-testkit" -Destination "../rusty-testkit"
+          Move-Item -Path "siblings/rusty-ultraviolet" -Destination "../rusty-ultraviolet"
+          Move-Item -Path "siblings/rusty-x-ansi" -Destination "../rusty-x-ansi"
+      - name: Verify sibling dependency source identity
+        run: node scripts/check-dependency-sources.mjs
+      - name: Compile Windows library surface
+        run: cargo +1.98.0 check --lib
+      - name: Run focused Windows TTY regressions
+        run: cargo +1.98.0 test --test windows_tty --no-fail-fast
   gate:
     name: Lint / Build / Doc / Tests
     runs-on: ubuntu-latest
     needs: version-bump
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+          persist-credentials: false
+      - name: Verify exact candidate checkout
+        shell: bash
+        run: test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
       - uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772
         with:
           toolchain: 1.98.0
@@ -52,49 +138,55 @@ jobs:
           } >> "$GITHUB_ENV"
       - name: Test shared Cargo cache env
         run: scripts/test-cargo-env.sh
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
         with:
           go-version: 'stable'
       - name: Fetch upstream Go source (pinned)
         run: |
-          git clone --quiet https://github.com/charmbracelet/bubbletea.git upstream-go
-          cd upstream-go && git checkout --quiet v2.0.8
+          git clone --quiet --no-tags https://github.com/charmbracelet/bubbletea.git upstream-go
+          cd upstream-go && git checkout --quiet fc707bb7ea0161405bb6c653ec93f6a9c6a72fe1
       - name: Fetch sibling rusty-bubbles (pinned)
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: coderbants/rusty-bubbles
           path: siblings/rusty-bubbles
-          ref: dev
+          ref: 4e630da89d40b63c5c57722ff4c9f85a791ce59b
+          persist-credentials: false
       - name: Fetch sibling rusty-colorprofile (pinned)
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: coderbants/rusty-colorprofile
           path: siblings/rusty-colorprofile
-          ref: dev
+          ref: 2d505e7821f72f133c17d6cc7afd314e03eddb66
+          persist-credentials: false
       - name: Fetch sibling rusty-lipgloss (pinned)
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: coderbants/rusty-lipgloss
           path: siblings/rusty-lipgloss
-          ref: dev
+          ref: e4ba3aaffb7468239b5e0c4d174e13d4b372afc4
+          persist-credentials: false
       - name: Fetch sibling rusty-testkit (pinned)
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: coderbants/rusty-testkit
           path: siblings/rusty-testkit
-          ref: dev
+          ref: 9b689f2abc13b856ff704d20a9cdba714e71fbd2
+          persist-credentials: false
       - name: Fetch sibling rusty-ultraviolet (pinned)
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: coderbants/rusty-ultraviolet
           path: siblings/rusty-ultraviolet
-          ref: dev
+          ref: 09d7ac8e04e70255dd8dfd66af56dd2fa816b2e2
+          persist-credentials: false
       - name: Fetch sibling rusty-x-ansi (pinned)
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: coderbants/rusty-x-ansi
           path: siblings/rusty-x-ansi
-          ref: dev
+          ref: 971128e8566ad37991cd9cc50ff4f4c8a4b09c29
+          persist-credentials: false
       - name: Place sibling crates
         run: |
           mkdir -p ../siblings && true
@@ -105,9 +197,7 @@ jobs:
           mv siblings/rusty-ultraviolet ../rusty-ultraviolet
           mv siblings/rusty-x-ansi ../rusty-x-ansi
       - name: Verify sibling dependency source identity
-        run: |
-          cargo tree --package rusty-bubbletea --invert rusty-colorprofile@0.4.3
-          cargo tree --package rusty-bubbletea --invert rusty-x-ansi@0.11.7
+        run: node scripts/check-dependency-sources.mjs
       - name: Format
         run: cargo fmt --all --check
       - name: Lint
@@ -133,13 +223,19 @@ jobs:
       - name: verify_toolchain
         run: ./scripts/verify_toolchain.sh
       - name: test_release_guards
-        run: ./scripts/test_release_guards.sh
+        run: ./scripts/release-guards.test.sh
   coverage:
     name: Coverage
     runs-on: ubuntu-latest
     needs: gate
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+          persist-credentials: false
+      - name: Verify exact candidate checkout
+        shell: bash
+        run: test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
       - uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772
         with:
           toolchain: 1.98.0
@@ -158,41 +254,47 @@ jobs:
             echo "CARGO_INSTALL_ROOT=$CARGO_INSTALL_ROOT"
           } >> "$GITHUB_ENV"
       - name: Fetch sibling rusty-bubbles (pinned)
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: coderbants/rusty-bubbles
           path: siblings/rusty-bubbles
-          ref: dev
+          ref: 4e630da89d40b63c5c57722ff4c9f85a791ce59b
+          persist-credentials: false
       - name: Fetch sibling rusty-colorprofile (pinned)
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: coderbants/rusty-colorprofile
           path: siblings/rusty-colorprofile
-          ref: dev
+          ref: 2d505e7821f72f133c17d6cc7afd314e03eddb66
+          persist-credentials: false
       - name: Fetch sibling rusty-lipgloss (pinned)
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: coderbants/rusty-lipgloss
           path: siblings/rusty-lipgloss
-          ref: dev
+          ref: e4ba3aaffb7468239b5e0c4d174e13d4b372afc4
+          persist-credentials: false
       - name: Fetch sibling rusty-testkit (pinned)
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: coderbants/rusty-testkit
           path: siblings/rusty-testkit
-          ref: dev
+          ref: 9b689f2abc13b856ff704d20a9cdba714e71fbd2
+          persist-credentials: false
       - name: Fetch sibling rusty-ultraviolet (pinned)
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: coderbants/rusty-ultraviolet
           path: siblings/rusty-ultraviolet
-          ref: dev
+          ref: 09d7ac8e04e70255dd8dfd66af56dd2fa816b2e2
+          persist-credentials: false
       - name: Fetch sibling rusty-x-ansi (pinned)
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: coderbants/rusty-x-ansi
           path: siblings/rusty-x-ansi
-          ref: dev
+          ref: 971128e8566ad37991cd9cc50ff4f4c8a4b09c29
+          persist-credentials: false
       - name: Place sibling crates
         run: |
           mkdir -p ../siblings && true
@@ -203,14 +305,16 @@ jobs:
           mv siblings/rusty-ultraviolet ../rusty-ultraviolet
           mv siblings/rusty-x-ansi ../rusty-x-ansi
       - name: Install cargo-tarpaulin
-        uses: taiki-e/install-action@cargo-tarpaulin
+        uses: taiki-e/install-action@ea1c3734cd0711356678179db64b866219fd688b
+        with:
+          tool: cargo-tarpaulin
       - name: Generate code coverage
         run: |
           cargo tarpaulin --all-features --out xml --output-dir target/tarpaulin -- --test-threads=1 2>&1 | tee /tmp/tarpaulin.log
 
       - name: Upload coverage report for dev badge
         if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: coverage-report
           path: target/tarpaulin/cobertura.xml
@@ -225,11 +329,11 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           ref: dev
       - name: Download coverage report
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: coverage-report
           path: target/tarpaulin

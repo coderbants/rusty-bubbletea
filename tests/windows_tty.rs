@@ -4,6 +4,10 @@
 
 use rusty_bubbletea::{termios_unix, termios_windows, tty, tty_unix, tty_windows};
 
+fn assert_explained(error: &dyn std::error::Error, context: &str) {
+    assert!(!error.to_string().trim().is_empty(), "{context}");
+}
+
 #[test]
 fn windows_selects_windows_terminal_modules() {
     assert!(tty_windows::is_windows_tty());
@@ -29,9 +33,9 @@ fn windows_terminal_operations_round_trip_when_a_console_is_available() {
             tty::disable_raw_mode().expect("a console that enables raw mode must restore it");
         }
         Err(error) => {
-            assert!(
-                !error.to_string().is_empty(),
-                "raw-mode failure should explain why the host console is unavailable"
+            assert_explained(
+                &error,
+                "raw-mode failure should explain why the host console is unavailable",
             );
         }
     }
@@ -42,9 +46,9 @@ fn windows_terminal_operations_round_trip_when_a_console_is_available() {
             tty::restore_terminal().expect("a console that initializes must restore");
         }
         Err(error) => {
-            assert!(
-                !error.to_string().is_empty(),
-                "terminal initialization failure should explain why the host console is unavailable"
+            assert_explained(
+                error.as_ref(),
+                "terminal initialization failure should explain why the host console is unavailable",
             );
         }
     }
@@ -57,9 +61,9 @@ fn windows_terminal_operations_round_trip_when_a_console_is_available() {
             );
             assert!(rows > 0, "a Windows console must report positive rows");
         }
-        Err(error) => assert!(
-            !error.to_string().is_empty(),
-            "window-size failure should explain why the host console is unavailable"
+        Err(error) => assert_explained(
+            error.as_ref(),
+            "window-size failure should explain why the host console is unavailable",
         ),
     }
 }
